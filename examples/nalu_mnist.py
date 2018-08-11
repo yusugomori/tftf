@@ -44,5 +44,6 @@ if __name__ == '__main__':
     model.fit(train_X, train_y, epochs=20)
 
     '''
+    Test model
     '''
     print(model.accuracy(test_X, test_y))

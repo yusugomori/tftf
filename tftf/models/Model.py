@@ -8,12 +8,16 @@ from .optimizers import *
 
 class Model(object):
     def __init__(self):
-        self.layers = []
+        self._layers = []
         self._shapes = []
 
     # def __del__(self):
     #     if self._sess is not None:
     #         self._sess.close()
+
+    @property
+    def layers(self):
+        return self._layers
 
     def add(self, layer):
         input_dim = layer.input_dim
@@ -30,18 +34,18 @@ class Model(object):
                 output_dim = layer.output_dim = input_dim
 
         self._shapes.append((input_dim, output_dim))
-        self.layers.append(layer)
+        self._layers.append(layer)
 
     def compile(self, loss='mse', optimizer='rmsprop'):
         self._set_loss_function(loss)
         self._set_optimize(optimizer)
 
-        input_shape = [None] + list(self._shapes[0][:-1])
-        output_shape = [None, self._shapes[-1][1]]
+        input_shape = [None] + list(self.layers[0].input_shape)
+        output_shape = [None] + list(self.layers[-1].output_shape)
 
         x = self.data = tf.placeholder(tf.float32, shape=input_shape)
         t = self.target = tf.placeholder(tf.float32, shape=output_shape)
-        y = self.predict(x)
+        y = self._y = self._predict(x)
         self._loss = self._loss_function(y, t)
         self._set_accuracy(y, t)
         self._train_step = self._optimize().minimize(self._loss)
@@ -75,12 +79,12 @@ class Model(object):
             print('Epoch: {}, loss: {:.3}, acc: {:.3}'
                   .format((epoch + 1), _loss, _acc))
 
-    def predict(self, x):
-        output = x
-        for layer in self.layers:
-            output = layer.forward(output)
-
-        return output
+    def predict(self, data):
+        ret = self._sess.run(self._y,
+                             feed_dict={
+                                 self.data: data
+                             })
+        return ret
 
     def loss(self, data, target):
         loss = self._sess.run(self._loss,
@@ -98,6 +102,13 @@ class Model(object):
                              })
         return acc
 
+    def _predict(self, x):
+        output = x
+        for layer in self.layers:
+            output = layer.forward(output)
+
+        return output
+
     def _set_accuracy(self, y, t):
         if self._shapes[-1][1] == 1:
             correct_prediction = \
@@ -113,6 +124,7 @@ class Model(object):
         losses = {
             'binary_crossentropy': binary_crossentropy,
             'categorical_crossentropy': categorical_crossentropy,
+            'mean_squared_error': mean_squared_error,
             'mse': mean_squared_error
         }
 

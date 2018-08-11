@@ -7,19 +7,7 @@ class Activation(Layer):
         super().__init__()
         self.input_dim = None
         self.output_dim = None
-        activations = {
-            'linear': linear,
-            'relu': relu,
-            'sigmoid': sigmoid,
-            'softmax': softmax,
-            'swish': swish,
-            'tanh': tanh
-        }
-
-        if activation in activations:
-            self.activation = activations[activation]
-        else:
-            self.activation = activation
+        self.activation = self.activation_initializer(activation)
 
     def __repr__(self):
         return '<{}: {}({}, {})>'.format('Activation',
