@@ -13,7 +13,9 @@ class Layer(object):
         initializers = {
             'glorot_normal': glorot_normal,
             'glorot_uniform': glorot_uniform,
-            'normal': normal
+            'orthogonal': orthogonal,
+            'normal': normal,
+            'zeros': zeros
         }
 
         if initializer in initializers:
