@@ -49,7 +49,7 @@ class LSTM(Layer):
         self.W_recurrent_o = \
             self.kernel_initializer(recurrent_initializer,
                                     shape=(output_dim, output_dim),
-                                    name='W_recurrent_')
+                                    name='W_recurrent_o')
 
         self.b_c = zeros((output_dim), name='b_c')
         self.b_i = zeros((output_dim), name='b_i')
