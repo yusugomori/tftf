@@ -36,17 +36,14 @@ class RNN(Layer):
     def input_shape(self):
         return (self._length_of_sequences, self.input_dim)
 
-    def forward(self, x, masking=True, padding_value=-1.):
+    def forward(self, x):
+        # TODO: masking padding_value
         def _recurrent(state, elems):
             state = \
                 self.recurrent_activation(tf.matmul(elems, self.W)
                                           + tf.matmul(state, self.W_recurrent)
                                           + self.b)
             return state
-
-        # if masking is True:
-        #     mask = tf.cast(tf.not_equal(x, padding_value), tf.float32)
-        # _x =
 
         initial_state = \
             tf.matmul(x[:, 0, :],
