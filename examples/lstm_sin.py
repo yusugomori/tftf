@@ -13,7 +13,7 @@ from tftf.models import Model
 
 
 if __name__ == '__main__':
-    np.random.seed(12345)
+    np.random.seed(1234)
 
     '''
     Load data
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     f = toy_problem(T)
 
     length_of_sequences = 2 * T
-    maxlen = 50
+    maxlen = 25
 
     data = []
     target = []
@@ -48,8 +48,9 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(LSTM(1, 20))
-    model.add(Dense(20, 1))
+    model.add(LSTM(1, 10, return_sequence=True))
+    model.add(LSTM(10, 10))
+    model.add(Dense(10, 1))
     model.add(Activation('linear'))
     model.compile()
 
