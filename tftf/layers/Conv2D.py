@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from .Layer import Layer
 from .initializers import *
@@ -26,11 +27,12 @@ class Conv2D(Layer):
         if padding not in ('VALID', 'SAME'):
             raise ValueError('padding must be one of \'valid\' or \'same\'.')
 
-        self.input_dim = input_shape
-        self.output_dim = self._get_output_shape()
         self.kernel_size = kernel_size
         self.strides = strides
         self.padding = padding
+
+        input_dim = self.input_dim = input_shape
+        output_dim = self.output_dim = self._get_output_shape()
 
         kernel_shape = kernel_size[:2] + (input_shape[2], kernel_size[2])
 
@@ -69,6 +71,6 @@ class Conv2D(Layer):
         if padding is 'SAME':
             return tuple(list(image_size) + [channel])
         else:
-            return tuple(list(int((np.array(image_size)
-                                  - np.array(kernel_size))
-                                  / np.array(strides)) + 1) + [channel])
+            return tuple(list((np.array(image_size)
+                               - np.array(kernel_size[:2]))
+                              // np.array(strides) + 1) + [channel])
