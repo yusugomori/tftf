@@ -53,6 +53,9 @@ class Model(object):
         self._sess = tf.Session()
         self._sess.run(self._init)
 
+    def eval(self, elem, feed_dict):
+        return self._sess.run(elem, feed_dict=feed_dict)
+
     # TODO: validation data
     def fit(self, data, target, epochs=10, batch_size=100):
         if len(data) != len(target):
@@ -69,37 +72,37 @@ class Model(object):
                 _start = i * batch_size
                 _end = _start + batch_size
 
-                self._sess.run(self._train_step,
-                               feed_dict={
-                                   self.data: _data[_start:_end],
-                                   self.target: _target[_start:_end]
-                               })
+                self.eval(self._train_step,
+                          feed_dict={
+                              self.data: _data[_start:_end],
+                              self.target: _target[_start:_end]
+                          })
             _loss = self.loss(_data, _target)
             _acc = self.accuracy(_data, _target)
             print('Epoch: {}, loss: {:.3}, acc: {:.3}'
                   .format((epoch + 1), _loss, _acc))
 
     def predict(self, data):
-        ret = self._sess.run(self._y,
-                             feed_dict={
-                                 self.data: data
-                             })
+        ret = self.eval(self._y,
+                        feed_dict={
+                            self.data: data
+                        })
         return ret
 
     def loss(self, data, target):
-        loss = self._sess.run(self._loss,
-                              feed_dict={
-                                  self.data: data,
-                                  self.target: target
-                              })
+        loss = self.eval(self._loss,
+                         feed_dict={
+                            self.data: data,
+                            self.target: target
+                         })
         return loss
 
     def accuracy(self, data, target):
-        acc = self._sess.run(self._accuracy,
-                             feed_dict={
-                                 self.data: data,
-                                 self.target: target
-                             })
+        acc = self.eval(self._accuracy,
+                        feed_dict={
+                            self.data: data,
+                            self.target: target
+                        })
         return acc
 
     def _predict(self, x):

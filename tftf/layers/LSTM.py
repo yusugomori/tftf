@@ -75,7 +75,7 @@ class LSTM(Layer):
     @property
     def cell_state(self):
         if self._return_sequence is True:
-            return tf.tranpose(self._cell_state, perm=[1, 0, 2])
+            return tf.transpose(self._cell_state, perm=[1, 0, 2])
         else:
             return self._cell_state[-1]
 
