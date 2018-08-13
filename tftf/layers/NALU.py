@@ -24,7 +24,7 @@ class NALU(NAC):
                                     shape=(self.input_dim, self.output_dim),
                                     name='G')
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         eps = 1e-8
         self.g = sigmoid(tf.matmul(x, self.G))
         self.m = tf.exp(tf.matmul(tf.log(tf.abs(x) + eps), self.W))

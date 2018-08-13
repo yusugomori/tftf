@@ -3,8 +3,8 @@ import tensorflow as tf
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from tftf.layers\
-    import Dense, Activation, BatchNormalization, Conv2D, MaxPooling2D, Flatten
+from tftf.layers import Dense, Activation, BatchNormalization, Dropout, \
+    Conv2D, MaxPooling2D, Flatten
 from tftf.models import Model
 
 
@@ -36,19 +36,23 @@ if __name__ == '__main__':
                      padding='valid'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
+    model.add(Dropout(0.3))
     model.add(MaxPooling2D())
     model.add(Conv2D(kernel_size=(3, 3, 50),
                      padding='valid'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
+    model.add(Dropout(0.3))
     model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(1024))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
+    model.add(Dropout(0.5))
     model.add(Dense(200))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
+    model.add(Dropout(0.5))
     model.add(Dense(10))
     model.add(Activation('softmax'))
     model.compile()

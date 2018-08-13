@@ -15,10 +15,5 @@ class Activation(Layer):
     def compile(self):
         pass
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return self.activation(x)
-
-    def initialize_output_dim(self):
-        super().initialize_output_dim()
-        self.output_dim = self.input_dim
-        return self.output_dim

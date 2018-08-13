@@ -10,7 +10,7 @@ class Flatten(Layer):
     def compile(self):
         pass
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return tf.reshape(x, (-1, self.output_dim))
 
     def initialize_output_dim(self):

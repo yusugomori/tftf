@@ -3,11 +3,13 @@ import tensorflow as tf
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from tftf.layers import Layer, Dense, Activation
+from tftf.layers import Layer, Dense, Activation, Dropout
 from tftf.models import Model
 
 
 if __name__ == '__main__':
+    np.random.seed(0)
+    tf.set_random_seed(0)
     '''
     Load data
     '''
@@ -29,10 +31,14 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(Dense(500,
+    model.add(Dense(200,
                     input_dim=784,
                     initializer='glorot_uniform'))
-    model.add(Activation('sigmoid'))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(200))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
     model.add(Dense(10, initializer='glorot_uniform'))
     model.add(Activation('softmax'))
     model.compile()
