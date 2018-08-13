@@ -65,8 +65,9 @@ class Layer(object):
         initializers = {
             'glorot_normal': glorot_normal,
             'glorot_uniform': glorot_uniform,
-            'orthogonal': orthogonal,
             'normal': normal,
+            'ones': ones,
+            'orthogonal': orthogonal,
             'zeros': zeros
         }
 
