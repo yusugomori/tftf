@@ -12,9 +12,9 @@ from tftf.models import Model
 Build model
 '''
 model = Model()
-model.add(Dense(784, 500))
+model.add(Dense(500, input_dim=784))
 model.add(Activation('sigmoid'))
-model.add(Dense(500, 10))
+model.add(Dense(10))
 model.add(Activation('softmax'))
 model.compile()
 
