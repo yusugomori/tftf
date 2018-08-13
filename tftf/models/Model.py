@@ -47,7 +47,10 @@ class Model(object):
 
         x = self.data = tf.placeholder(tf.float32, shape=input_shape)
         t = self.target = tf.placeholder(tf.float32, shape=output_shape)
-        y = self._y = self._predict(x)
+        training = self.training = \
+            tf.placeholder_with_default(False, ())
+
+        y = self._y = self._predict(x, training=training)
         self._loss = self._loss_function(y, t)
         self._set_accuracy(y, t)
         self._train_step = self._optimize().minimize(self._loss)
@@ -84,7 +87,8 @@ class Model(object):
                 self.eval(self._train_step,
                           feed_dict={
                               self.data: _data[_start:_end],
-                              self.target: _target[_start:_end]
+                              self.target: _target[_start:_end],
+                              self.training: True
                           })
             _loss = self.loss(_data, _target)
             _acc = self.accuracy(_data, _target)
@@ -115,10 +119,10 @@ class Model(object):
                         })
         return acc
 
-    def _predict(self, x):
+    def _predict(self, x, **kwargs):
         output = x
         for layer in self.layers:
-            output = layer.forward(output)
+            output = layer.forward(output, **kwargs)
 
         return output
 

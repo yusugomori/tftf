@@ -20,5 +20,5 @@ class Dense(Layer):
                                     name='W')
         self.b = zeros((self.output_dim), name='b')
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return tf.matmul(x, self.W) + self.b

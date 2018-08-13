@@ -57,12 +57,15 @@ class Layer(object):
     def compile(self):
         raise NotImplementedError()
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         raise NotImplementedError()
 
     def initialize_output_dim(self):
         if self.input_dim is None:
             raise ValueError('input_dim not definfed.')
+
+        self.output_dim = self.input_dim
+        return self.output_dim
 
     def kernel_initializer(self, initializer, shape, name=None):
         initializers = {

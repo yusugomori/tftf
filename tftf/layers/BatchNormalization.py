@@ -23,15 +23,10 @@ class BatchNormalization(Layer):
                                     shape=(self.input_dim),
                                     name='beta')
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         axes = 0
         if len(x.get_shape()) == 4:
             axes = (0, 1, 2)
         mean, var = tf.nn.moments(x, axes, keep_dims=True)
         std = tf.sqrt(var + self.eps)
         return self.gamma * (x - mean) / std + self.beta
-
-    def initialize_output_dim(self):
-        super().initialize_output_dim()
-        self.output_dim = self.input_dim
-        return self.output_dim

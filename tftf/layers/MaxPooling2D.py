@@ -45,7 +45,7 @@ class MaxPooling2D(Layer):
     def compile(self):
         pass
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return tf.nn.max_pool(x,
                               ksize=self._pool_size,
                               strides=self._strides,

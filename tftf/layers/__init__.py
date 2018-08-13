@@ -2,6 +2,7 @@ from .Activation import Activation
 from .BatchNormalization import BatchNormalization
 from .Conv2D import Conv2D
 from .Dense import Dense
+from .Dropout import Dropout
 from .Flatten import Flatten
 from .Layer import Layer
 from .LSTM import LSTM

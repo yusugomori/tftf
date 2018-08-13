@@ -43,7 +43,7 @@ class RNN(Layer):
                                     shape=(output_dim, output_dim),
                                     name='W_recurrent')
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # TODO: masking padding_value
         def _recurrent(state, elems):
             state = \
