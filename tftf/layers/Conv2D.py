@@ -42,7 +42,7 @@ class Conv2D(Layer):
         self.b = zeros((output_dim), name='b')
 
     def __repr__(self):
-        return '<{}: shape({}, {})>'.format('Dense',
+        return '<{}: shape({}, {})>'.format('Conv2D',
                                             self.input_dim,
                                             self.output_dim)
 
@@ -54,9 +54,13 @@ class Conv2D(Layer):
     def output_shape(self):
         return self.output_dim
 
+    @property
+    def _strides(self):
+        return tuple([1] + list(self.strides) + [1])
+
     def forward(self, x):
         return tf.nn.conv2d(x, self.W,
-                            strides=self.strides,
+                            strides=self._strides,
                             padding=self.padding)
 
     def _get_output_shape(self):
@@ -68,7 +72,7 @@ class Conv2D(Layer):
         image_size = input_shape[:2]
         channel = kernel_size[2]
 
-        if padding is 'SAME':
+        if padding == 'SAME':
             return tuple(list(image_size) + [channel])
         else:
             return tuple(list((np.array(image_size)

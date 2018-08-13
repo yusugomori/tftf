@@ -17,3 +17,8 @@ class Activation(Layer):
 
     def forward(self, x):
         return self.activation(x)
+
+    def initialize_output_dim(self):
+        super().initialize_output_dim()
+        self.output_dim = self.input_dim
+        return self.output_dim

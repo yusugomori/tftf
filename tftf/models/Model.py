@@ -31,7 +31,8 @@ class Model(object):
             if input_dim is None:
                 input_dim = layer.input_dim = self._shapes[-1][1]
             if output_dim is None:
-                output_dim = layer.output_dim = input_dim
+                output_dim = layer.output_dim = \
+                    layer.initialize_output_dim()
 
         self._shapes.append((input_dim, output_dim))
         self._layers.append(layer)
@@ -53,11 +54,19 @@ class Model(object):
         self._sess = tf.Session()
         self._sess.run(self._init)
 
+    def describe(self):
+        layers = self.layers
+        print('# of layers: {}'.format(len(layers)))
+        for layer in layers:
+            print(layer)
+
     def eval(self, elem, feed_dict):
         return self._sess.run(elem, feed_dict=feed_dict)
 
     # TODO: validation data
-    def fit(self, data, target, epochs=10, batch_size=100):
+    def fit(self, data, target,
+            epochs=10, batch_size=100,
+            verbose=1):
         if len(data) != len(target):
             raise AttributeError('Length of X and y does not match.')
         n_data = len(data)
@@ -79,8 +88,9 @@ class Model(object):
                           })
             _loss = self.loss(_data, _target)
             _acc = self.accuracy(_data, _target)
-            print('Epoch: {}, loss: {:.3}, acc: {:.3}'
-                  .format((epoch + 1), _loss, _acc))
+            if verbose:
+                print('Epoch: {}, loss: {:.3}, acc: {:.3}'
+                      .format((epoch + 1), _loss, _acc))
 
     def predict(self, data):
         ret = self.eval(self._y,
