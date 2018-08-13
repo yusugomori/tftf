@@ -1,6 +1,5 @@
 import tensorflow as tf
 from .NAC import NAC
-from .initializers import *
 from ..activations import sigmoid
 
 
@@ -17,11 +16,6 @@ class NALU(NAC):
         self.G = self.kernel_initializer(initializer,
                                          shape=(input_dim, output_dim),
                                          name='G')
-
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('NALU',
-                                            self.input_dim,
-                                            self.output_dim)
 
     def forward(self, x):
         eps = 1e-8

@@ -1,6 +1,7 @@
 from .Activation import Activation
 from .Conv2D import Conv2D
 from .Dense import Dense
+from .Flatten import Flatten
 from .Layer import Layer
 from .LSTM import LSTM
 from .MaxPooling2D import MaxPooling2D

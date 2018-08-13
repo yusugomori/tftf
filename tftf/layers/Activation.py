@@ -1,5 +1,4 @@
 from .Layer import Layer
-from ..activations import *
 
 
 class Activation(Layer):
@@ -10,7 +9,7 @@ class Activation(Layer):
         self.activation = self.activation_initializer(activation)
 
     def __repr__(self):
-        return '<{}: {}({}, {})>'.format('Activation',
+        return '<{}: {}({}, {})>'.format(self.__class__.__name__,
                                          self.activation.__name__,
                                          self.input_dim,
                                          self.output_dim)

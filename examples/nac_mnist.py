@@ -38,6 +38,8 @@ if __name__ == '__main__':
     model.add(Activation('softmax'))
     model.compile()
 
+    model.describe()
+
     '''
     Train model
     '''

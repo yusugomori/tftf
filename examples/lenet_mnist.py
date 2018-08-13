@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from tftf.layers import Dense, Activation, Conv2D, MaxPooling2D
+from tftf.layers import Dense, Activation, Conv2D, MaxPooling2D, Flatten
 from tftf.models import Model
 
 
@@ -37,11 +37,14 @@ if __name__ == '__main__':
     model.add(Conv2D((28, 28, 1),
                      kernel_size=(3, 3, 20),
                      padding='valid'))
+    model.add(Activation('relu'))
     model.add(MaxPooling2D())
     model.add(Conv2D(model.layers[-1].output_shape,
                      kernel_size=(3, 3, 50),
                      padding='valid'))
+    model.add(Activation('relu'))
     model.add(MaxPooling2D())
+    model.add(Flatten())
     model.compile()
 
     model.describe()

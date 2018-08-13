@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import *
 
 
 class MaxPooling2D(Layer):
@@ -28,11 +27,6 @@ class MaxPooling2D(Layer):
         self.pool_size = pool_size
         self.strides = strides
         self.padding = padding
-
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('MaxPooling2D',
-                                            self.input_dim,
-                                            self.output_dim)
 
     @property
     def input_shape(self):

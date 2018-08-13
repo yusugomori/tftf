@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import *
+from .initializers import zeros
 
 
 class Conv2D(Layer):
@@ -40,11 +40,6 @@ class Conv2D(Layer):
                                          shape=kernel_shape,
                                          name='W')
         self.b = zeros((output_dim), name='b')
-
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('Conv2D',
-                                            self.input_dim,
-                                            self.output_dim)
 
     @property
     def input_shape(self):

@@ -31,8 +31,7 @@ class Model(object):
             if input_dim is None:
                 input_dim = layer.input_dim = self._shapes[-1][1]
             if output_dim is None:
-                output_dim = layer.output_dim = \
-                    layer.initialize_output_dim()
+                output_dim = layer.initialize_output_dim()
 
         self._shapes.append((input_dim, output_dim))
         self._layers.append(layer)
@@ -56,7 +55,6 @@ class Model(object):
 
     def describe(self):
         layers = self.layers
-        print('# of layers: {}'.format(len(layers)))
         for layer in layers:
             print(layer)
 

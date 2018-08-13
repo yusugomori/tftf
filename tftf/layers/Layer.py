@@ -7,6 +7,11 @@ class Layer(object):
         self._input_dim = None
         self._output_dim = None
 
+    def __repr__(self):
+        return '<{}: shape({}, {})>'.format(self.__class__.__name__,
+                                            self.input_dim,
+                                            self.output_dim)
+
     @property
     def shape(self):
         return (self.input_dim, self.output_dim)
@@ -35,13 +40,6 @@ class Layer(object):
     def output_shape(self):
         return (self.output_dim,)
 
-    def forward(self, x):
-        raise NotImplementedError()
-
-    def initialize_output_dim(self):
-        if self.input_dim is None:
-            raise ValueError('input_dim not definfed.')
-
     def activation_initializer(self, activation):
         activations = {
             'linear': linear,
@@ -55,6 +53,13 @@ class Layer(object):
             activation = activations[activation]
 
         return activation
+
+    def forward(self, x):
+        raise NotImplementedError()
+
+    def initialize_output_dim(self):
+        if self.input_dim is None:
+            raise ValueError('input_dim not definfed.')
 
     def kernel_initializer(self, initializer, shape, name=None):
         initializers = {
