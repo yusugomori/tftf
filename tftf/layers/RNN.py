@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import *
+from .initializers import zeros
 
 
 class RNN(Layer):
@@ -30,11 +30,6 @@ class RNN(Layer):
         self._length_of_sequences = length_of_sequences
         self._return_sequence = return_sequence
         self._initial_state = initial_state
-
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('RNN',
-                                            self.input_dim,
-                                            self.output_dim)
 
     @property
     def input_shape(self):

@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import *
+from .initializers import zeros
 
 
 class LSTM(Layer):
@@ -67,15 +67,10 @@ class LSTM(Layer):
         self._initial_state = initial_state
         self._cell_state = cell_state
 
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('LSTM',
-                                            self.input_dim,
-                                            self.output_dim)
-
     @property
     def cell_state(self):
         if self._return_sequence is True:
-            return tf.tranpose(self._cell_state, perm=[1, 0, 2])
+            return tf.transpose(self._cell_state, perm=[1, 0, 2])
         else:
             return self._cell_state[-1]
 

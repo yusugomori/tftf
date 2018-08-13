@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-from tftf.layers import Dense, Activation, NAC
+from tftf.layers import Dense, Activation, Conv2D, MaxPooling2D, Flatten
 from tftf.models import Model
 
 
@@ -24,6 +24,7 @@ if __name__ == '__main__':
     X = mnist.data[indices]
     X = X / 255.0
     X = X - X.mean(axis=1).reshape(len(X), 1)
+    X = X.reshape(-1, 28, 28, 1)
     y = mnist.target[indices]
     Y = np.eye(10)[y.astype(int)]
 
@@ -33,7 +34,21 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(NAC(784, 200))
+    model.add(Conv2D((28, 28, 1),
+                     kernel_size=(3, 3, 20),
+                     padding='valid'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D())
+    model.add(Conv2D(model.layers[-1].output_dim,
+                     kernel_size=(3, 3, 50),
+                     padding='valid'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D())
+    model.add(Flatten())
+    model.add(Dense(model.layers[-1].output_dim, 1024))
+    model.add(Activation('relu'))
+    model.add(Dense(1024, 200))
+    model.add(Activation('relu'))
     model.add(Dense(200, 10))
     model.add(Activation('softmax'))
     model.compile()
@@ -43,7 +58,7 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    model.fit(train_X, train_y, epochs=20)
+    model.fit(train_X, train_y)
 
     '''
     Test model

@@ -31,7 +31,7 @@ class Model(object):
             if input_dim is None:
                 input_dim = layer.input_dim = self._shapes[-1][1]
             if output_dim is None:
-                output_dim = layer.output_dim = input_dim
+                output_dim = layer.initialize_output_dim()
 
         self._shapes.append((input_dim, output_dim))
         self._layers.append(layer)
@@ -53,8 +53,18 @@ class Model(object):
         self._sess = tf.Session()
         self._sess.run(self._init)
 
+    def describe(self):
+        layers = self.layers
+        for layer in layers:
+            print(layer)
+
+    def eval(self, elem, feed_dict):
+        return self._sess.run(elem, feed_dict=feed_dict)
+
     # TODO: validation data
-    def fit(self, data, target, epochs=10, batch_size=100):
+    def fit(self, data, target,
+            epochs=10, batch_size=100,
+            verbose=1):
         if len(data) != len(target):
             raise AttributeError('Length of X and y does not match.')
         n_data = len(data)
@@ -69,37 +79,38 @@ class Model(object):
                 _start = i * batch_size
                 _end = _start + batch_size
 
-                self._sess.run(self._train_step,
-                               feed_dict={
-                                   self.data: _data[_start:_end],
-                                   self.target: _target[_start:_end]
-                               })
+                self.eval(self._train_step,
+                          feed_dict={
+                              self.data: _data[_start:_end],
+                              self.target: _target[_start:_end]
+                          })
             _loss = self.loss(_data, _target)
             _acc = self.accuracy(_data, _target)
-            print('Epoch: {}, loss: {:.3}, acc: {:.3}'
-                  .format((epoch + 1), _loss, _acc))
+            if verbose:
+                print('Epoch: {}, loss: {:.3}, acc: {:.3}'
+                      .format((epoch + 1), _loss, _acc))
 
     def predict(self, data):
-        ret = self._sess.run(self._y,
-                             feed_dict={
-                                 self.data: data
-                             })
+        ret = self.eval(self._y,
+                        feed_dict={
+                            self.data: data
+                        })
         return ret
 
     def loss(self, data, target):
-        loss = self._sess.run(self._loss,
-                              feed_dict={
-                                  self.data: data,
-                                  self.target: target
-                              })
+        loss = self.eval(self._loss,
+                         feed_dict={
+                            self.data: data,
+                            self.target: target
+                         })
         return loss
 
     def accuracy(self, data, target):
-        acc = self._sess.run(self._accuracy,
-                             feed_dict={
-                                 self.data: data,
-                                 self.target: target
-                             })
+        acc = self.eval(self._accuracy,
+                        feed_dict={
+                            self.data: data,
+                            self.target: target
+                        })
         return acc
 
     def _predict(self, x):

@@ -53,6 +53,8 @@ if __name__ == '__main__':
     model.add(Activation('linear'))
     model.compile()
 
+    model.describe()
+
     '''
     Train model
     '''

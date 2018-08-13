@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import *
+from .initializers import zeros
 
 
 class Dense(Layer):
@@ -15,11 +15,6 @@ class Dense(Layer):
                                          shape=(input_dim, output_dim),
                                          name='W')
         self.b = zeros((output_dim), name='b')
-
-    def __repr__(self):
-        return '<{}: shape({}, {})>'.format('Dense',
-                                            self.input_dim,
-                                            self.output_dim)
 
     def forward(self, x):
         return tf.matmul(x, self.W) + self.b
