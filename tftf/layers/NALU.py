@@ -8,14 +8,21 @@ class NALU(NAC):
     Neural Arithmetic Logic Unit
     https://arxiv.org/pdf/1808.00508.pdf
     '''
-    def __init__(self, input_dim, output_dim,
+    def __init__(self, output_dim,
+                 input_dim=None,
                  initializer='normal',
                  rng=None):
-        super().__init__(input_dim, output_dim, initializer, rng)
+        super().__init__(output_dim,
+                         input_dim=input_dim,
+                         initializer=initializer,
+                         rng=rng)
 
-        self.G = self.kernel_initializer(initializer,
-                                         shape=(input_dim, output_dim),
-                                         name='G')
+    def compile(self):
+        super().compile()
+        self.G = \
+            self.kernel_initializer(self.initializer,
+                                    shape=(self.input_dim, self.output_dim),
+                                    name='G')
 
     def forward(self, x):
         eps = 1e-8

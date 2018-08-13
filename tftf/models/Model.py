@@ -23,23 +23,25 @@ class Model(object):
         input_dim = layer.input_dim
         output_dim = layer.output_dim
 
-        if len(self.layers) == 0:
-            if input_dim is None:
+        if input_dim is None:
+            if len(self.layers) == 0:
                 raise AttributeError('input_dim must be specified \
                                       on first layer.')
-        else:
-            if input_dim is None:
-                input_dim = layer.input_dim = self._shapes[-1][1]
-            if output_dim is None:
-                output_dim = layer.initialize_output_dim()
+            else:
+                layer.input_dim = self._shapes[-1][1]
 
-        self._shapes.append((input_dim, output_dim))
+        if output_dim is None:
+            layer.initialize_output_dim()
+
+        self._shapes.append(layer.shape)
         self._layers.append(layer)
 
     def compile(self, loss='mse', optimizer='rmsprop'):
         self._set_loss_function(loss)
         self._set_optimize(optimizer)
 
+        for layer in self._layers:
+            layer.compile()
         input_shape = [None] + list(self.layers[0].input_shape)
         output_shape = [None] + list(self.layers[-1].output_shape)
 

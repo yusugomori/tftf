@@ -29,9 +29,11 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(Dense(784, 500, initializer='glorot_uniform'))
+    model.add(Dense(500,
+                    input_dim=784,
+                    initializer='glorot_uniform'))
     model.add(Activation('sigmoid'))
-    model.add(Dense(500, 10, initializer='glorot_uniform'))
+    model.add(Dense(10, initializer='glorot_uniform'))
     model.add(Activation('softmax'))
     model.compile()
 

@@ -6,8 +6,9 @@ from .Layer import Layer
 class Flatten(Layer):
     def __init__(self):
         super().__init__()
-        self.input_dim = None
-        self.output_dim = None
+
+    def compile(self):
+        pass
 
     def forward(self, x):
         return tf.reshape(x, (-1, self.output_dim))

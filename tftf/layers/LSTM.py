@@ -4,7 +4,8 @@ from .initializers import zeros
 
 
 class LSTM(Layer):
-    def __init__(self, input_dim, output_dim,
+    def __init__(self, output_dim,
+                 input_dim=None,
                  initializer='glorot_uniform',
                  activation='tanh',
                  recurrent_initializer='orthogonal',
@@ -15,8 +16,36 @@ class LSTM(Layer):
                  cell_state=None,
                  rng=None):
         super().__init__()
-        self.input_dim = input_dim
         self.output_dim = output_dim
+        self.input_dim = input_dim
+
+        self.initializer = initializer
+        self.recurrent_initializer = recurrent_initializer
+        self.activation = \
+            self.activation_initializer(activation)
+        self.recurrent_activation = \
+            self.activation_initializer(recurrent_activation)
+        self._length_of_sequences = length_of_sequences
+        self._return_sequence = return_sequence
+        self._initial_state = initial_state
+        self._cell_state = cell_state
+
+    @property
+    def cell_state(self):
+        if self._return_sequence is True:
+            return tf.transpose(self._cell_state, perm=[1, 0, 2])
+        else:
+            return self._cell_state[-1]
+
+    @property
+    def input_shape(self):
+        return (self._length_of_sequences, self.input_dim)
+
+    def compile(self):
+        input_dim = self.input_dim
+        output_dim = self.output_dim
+        initializer = self.initializer
+        recurrent_initializer = self.recurrent_initializer
 
         self.W_c = \
             self.kernel_initializer(initializer,
@@ -55,28 +84,6 @@ class LSTM(Layer):
         self.b_i = zeros((output_dim), name='b_i')
         self.b_f = zeros((output_dim), name='b_f')
         self.b_o = zeros((output_dim), name='b_o')
-
-        self.activation = \
-            self.activation_initializer(activation)
-
-        self.recurrent_activation = \
-            self.activation_initializer(recurrent_activation)
-
-        self._length_of_sequences = length_of_sequences
-        self._return_sequence = return_sequence
-        self._initial_state = initial_state
-        self._cell_state = cell_state
-
-    @property
-    def cell_state(self):
-        if self._return_sequence is True:
-            return tf.transpose(self._cell_state, perm=[1, 0, 2])
-        else:
-            return self._cell_state[-1]
-
-    @property
-    def input_shape(self):
-        return (self._length_of_sequences, self.input_dim)
 
     def forward(self, x):
         activation = self.activation

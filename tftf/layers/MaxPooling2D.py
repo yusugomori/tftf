@@ -9,8 +9,6 @@ class MaxPooling2D(Layer):
                  strides=None,
                  padding='valid'):
         super().__init__()
-        self.input_dim = None
-        self.output_dim = None
 
         if len(pool_size) != 2:
             raise ValueError('Dimension of pool_size must be 2.')
@@ -43,6 +41,9 @@ class MaxPooling2D(Layer):
     @property
     def _strides(self):
         return tuple([1] + list(self.strides) + [1])
+
+    def compile(self):
+        pass
 
     def forward(self, x):
         return tf.nn.max_pool(x,

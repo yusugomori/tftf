@@ -4,7 +4,8 @@ from .initializers import zeros
 
 
 class RNN(Layer):
-    def __init__(self, input_dim, output_dim,
+    def __init__(self, output_dim,
+                 input_dim=None,
                  initializer='glorot_uniform',
                  recurrent_initializer='orthogonal',
                  recurrent_activation='tanh',
@@ -13,8 +14,25 @@ class RNN(Layer):
                  initial_state=None,
                  rng=None):
         super().__init__()
-        self.input_dim = input_dim
         self.output_dim = output_dim
+        self.input_dim = input_dim
+        self.initializer = initializer
+        self.recurrent_initializer = recurrent_initializer
+        self.recurrent_activation = \
+            self.activation_initializer(recurrent_activation)
+        self._length_of_sequences = length_of_sequences
+        self._return_sequence = return_sequence
+        self._initial_state = initial_state
+
+    @property
+    def input_shape(self):
+        return (self._length_of_sequences, self.input_dim)
+
+    def compile(self):
+        input_dim = self.input_dim
+        output_dim = self.output_dim
+        initializer = self.initializer
+        recurrent_initializer = self.recurrent_initializer
 
         self.W = self.kernel_initializer(initializer,
                                          shape=(input_dim, output_dim),
@@ -24,16 +42,6 @@ class RNN(Layer):
             self.kernel_initializer(recurrent_initializer,
                                     shape=(output_dim, output_dim),
                                     name='W_recurrent')
-        self.recurrent_activation = \
-            self.activation_initializer(recurrent_activation)
-
-        self._length_of_sequences = length_of_sequences
-        self._return_sequence = return_sequence
-        self._initial_state = initial_state
-
-    @property
-    def input_shape(self):
-        return (self._length_of_sequences, self.input_dim)
 
     def forward(self, x):
         # TODO: masking padding_value

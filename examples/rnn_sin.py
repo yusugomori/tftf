@@ -44,8 +44,8 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(RNN(1, 25))
-    model.add(Dense(25, 1))
+    model.add(RNN(25, input_dim=1))
+    model.add(Dense(1))
     model.add(Activation('linear'))
     model.compile()
 
