@@ -54,6 +54,9 @@ class Layer(object):
 
         return activation
 
+    def compile(self):
+        raise NotImplementedError()
+
     def forward(self, x):
         raise NotImplementedError()
 

@@ -44,9 +44,9 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(LSTM(1, 10, return_sequence=True))
-    model.add(LSTM(10, 10))
-    model.add(Dense(10, 1))
+    model.add(LSTM(10, input_dim=1, return_sequence=True))
+    model.add(LSTM(10))
+    model.add(Dense(1))
     model.add(Activation('linear'))
     model.compile()
 

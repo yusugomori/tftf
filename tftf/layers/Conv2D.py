@@ -5,7 +5,7 @@ from .Layer import Layer
 
 class Conv2D(Layer):
     def __init__(self,
-                 input_dim,
+                 input_dim=None,
                  kernel_size=(3, 3, 20),
                  strides=(1, 1),
                  padding='same',
@@ -13,7 +13,7 @@ class Conv2D(Layer):
                  rng=None):
         super().__init__()
 
-        if len(input_dim) != 3:
+        if input_dim is not None and len(input_dim) != 3:
             raise ValueError('Dimension of input_dim must be 3.')
 
         if len(kernel_size) != 3:
@@ -26,18 +26,11 @@ class Conv2D(Layer):
         if padding not in ('VALID', 'SAME'):
             raise ValueError('padding must be one of \'valid\' or \'same\'.')
 
+        self.input_dim = input_dim
         self.kernel_size = kernel_size
         self.strides = strides
         self.padding = padding
-
-        self.input_dim = input_dim
-        output_dim = self.output_dim = self._get_output_shape()
-
-        kernel_shape = kernel_size[:2] + (input_dim[2], kernel_size[2])
-
-        self.W = self.kernel_initializer(initializer,
-                                         shape=kernel_shape,
-                                         name='W')
+        self.initializer = initializer
 
     @property
     def input_shape(self):
@@ -51,10 +44,23 @@ class Conv2D(Layer):
     def _strides(self):
         return tuple([1] + list(self.strides) + [1])
 
+    def compile(self):
+        kernel_shape = \
+            self.kernel_size[:2] + (self.input_dim[2], self.kernel_size[2])
+
+        self.W = self.kernel_initializer(self.initializer,
+                                         shape=kernel_shape,
+                                         name='W')
+
     def forward(self, x):
         return tf.nn.conv2d(x, self.W,
                             strides=self._strides,
                             padding=self.padding)
+
+    def initialize_output_dim(self):
+        super().initialize_output_dim()
+        self.output_dim = self._get_output_shape()
+        return self.output_dim
 
     def _get_output_shape(self):
         input_shape = self.input_shape

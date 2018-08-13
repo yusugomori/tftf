@@ -29,8 +29,8 @@ if __name__ == '__main__':
     Build model
     '''
     model = Model()
-    model.add(NALU(784, 200))
-    model.add(Dense(200, 10))
+    model.add(NALU(200, input_dim=784))
+    model.add(Dense(10))
     model.add(Activation('softmax'))
     model.compile()
 
