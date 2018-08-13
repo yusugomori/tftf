@@ -39,16 +39,21 @@ if __name__ == '__main__':
                      padding='valid'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(model.layers[-1].output_shape,
+    model.add(Conv2D(model.layers[-1].output_dim,
                      kernel_size=(3, 3, 50),
                      padding='valid'))
     model.add(Activation('relu'))
     model.add(MaxPooling2D())
     model.add(Flatten())
+    model.add(Dense(model.layers[-1].output_dim, 1024))
+    model.add(Activation('relu'))
+    model.add(Dense(1024, 200))
+    model.add(Activation('relu'))
+    model.add(Dense(200, 10))
+    model.add(Activation('softmax'))
     model.compile()
 
     model.describe()
-    exit(0)
 
     '''
     Train model
