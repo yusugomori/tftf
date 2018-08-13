@@ -1,12 +1,11 @@
 import numpy as np
 import tensorflow as tf
 from .Layer import Layer
-from .initializers import zeros
 
 
 class Conv2D(Layer):
     def __init__(self,
-                 input_shape,
+                 input_dim,
                  kernel_size=(3, 3, 20),
                  strides=(1, 1),
                  padding='same',
@@ -14,8 +13,8 @@ class Conv2D(Layer):
                  rng=None):
         super().__init__()
 
-        if len(input_shape) != 3:
-            raise ValueError('Dimension of input_shape must be 3.')
+        if len(input_dim) != 3:
+            raise ValueError('Dimension of input_dim must be 3.')
 
         if len(kernel_size) != 3:
             raise ValueError('Dimension of kernel_size must be 3.')
@@ -31,15 +30,14 @@ class Conv2D(Layer):
         self.strides = strides
         self.padding = padding
 
-        input_dim = self.input_dim = input_shape
+        self.input_dim = input_dim
         output_dim = self.output_dim = self._get_output_shape()
 
-        kernel_shape = kernel_size[:2] + (input_shape[2], kernel_size[2])
+        kernel_shape = kernel_size[:2] + (input_dim[2], kernel_size[2])
 
         self.W = self.kernel_initializer(initializer,
                                          shape=kernel_shape,
                                          name='W')
-        self.b = zeros((output_dim), name='b')
 
     @property
     def input_shape(self):
