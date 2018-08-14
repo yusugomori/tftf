@@ -26,6 +26,7 @@ if __name__ == '__main__':
     Y = np.eye(10)[y.astype(int)]
 
     train_X, test_X, train_y, test_y = train_test_split(X, Y)
+    train_X, valid_X, train_y, valid_y = train_test_split(train_X, train_y)
 
     '''
     Build model
@@ -43,14 +44,19 @@ if __name__ == '__main__':
     model.add(Activation('softmax'))
     model.compile()
 
-    model.describe()
+    # model.describe()
+    model.describe_params()
 
     '''
     Train model
     '''
-    model.fit(train_X, train_y)
+    model.fit(train_X, train_y,
+              validation_data=(valid_X, valid_y),
+              metrics=['accuracy', 'f1'],
+              epochs=10)
 
     '''
     Test model
     '''
-    print(model.accuracy(test_X, test_y))
+    print('acc: {:.3}, f1: {:.3}'.format(model.accuracy(test_X, test_y),
+                                         model.f1(test_X, test_y)))
