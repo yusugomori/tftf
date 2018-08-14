@@ -10,7 +10,8 @@ setup(
     url='https://github.com/yusugomori/tftf',
     download_url='',
     license='Apache 2.0',
-    install_requires=['numpy>=1.13.3'],
+    install_requires=['numpy>=1.13.3',
+                      'sklearn>=0.19.1'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

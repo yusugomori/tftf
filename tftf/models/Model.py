@@ -4,6 +4,7 @@ import tensorflow as tf
 from sklearn.utils import shuffle
 from ..layers import Dense
 from .losses import *
+from .metrics import *
 from .optimizers import *
 
 
@@ -49,9 +50,6 @@ class Model(object):
         if not self._restored:
             self._compile_layers()
 
-        self._set_loss_function(loss)
-        self._set_optimize(optimizer)
-
         input_shape = [None] + list(self.layers[0].input_shape)
         output_shape = [None] + list(self.layers[-1].output_shape)
 
@@ -61,9 +59,9 @@ class Model(object):
             tf.placeholder_with_default(False, ())
 
         y = self._y = self._predict(x, training=training)
-        self._loss = self._loss_function(y, t)
-        self._set_accuracy(y, t)
-        self._train_step = self._optimize().minimize(self._loss)
+        self._loss = self._compile_loss(loss, y, t)
+        self._train_step = \
+            self._optimize(optimizer).minimize(self._loss)
 
         if not self._restored:
             self._sess = tf.Session()
@@ -103,9 +101,10 @@ class Model(object):
     def eval(self, elem, feed_dict):
         return self._sess.run(elem, feed_dict=feed_dict)
 
-    # TODO: validation data
     def fit(self, data, target,
             epochs=10, batch_size=100,
+            validation_data=None,
+            metrics=['accuracy'],
             verbose=1):
         if len(data) != len(target):
             raise AttributeError('Length of X and y does not match.')
@@ -127,11 +126,37 @@ class Model(object):
                               self.target: _target[_start:_end],
                               self.training: True
                           })
-            _loss = self.loss(_data, _target)
-            _acc = self.accuracy(_data, _target)
+
+            if validation_data is not None:
+                val_data = validation_data[0]
+                val_target = validation_data[1]
+                val_loss = self.loss(val_data, val_target)
+
             if verbose:
-                print('Epoch: {}, loss: {:.3}, acc: {:.3}'
-                      .format((epoch + 1), _loss, _acc))
+                def _format(results):
+                    return ', '.join(map(lambda tup:
+                                     '{}: {:.3}'.format(tup[0], tup[1]),
+                                         results))
+
+                out = 'epoch: {}, '.format(epoch + 1)
+                loss = self.loss(_data, _target)
+                results = [('loss', loss)]
+
+                for metric in metrics:
+                    results.append(self.metric(metric, _data, _target))
+
+                out += _format(results)
+
+                if validation_data is not None:
+                    out += ', '
+                    results = [('val_loss', val_loss)]
+                    for metric in metrics:
+                        results.append(self.metric(metric,
+                                                   val_data,
+                                                   val_target,
+                                                   validation=True))
+                    out += _format(results)
+                print(out)
 
     def predict(self, data):
         ret = self.eval(self._y,
@@ -148,13 +173,37 @@ class Model(object):
                          })
         return loss
 
+    def metric(self, metric, data, target, validation=False):
+        metrics = {
+            'accuracy': ('acc', self.accuracy),
+            'f1': ('f1', self.f1),
+            'precision': ('pre', self.precision),
+            'recall': ('rec', self.recall)
+        }
+
+        if metric in metrics:
+            name = metrics[metric][0]
+            score = metrics[metric][1](data, target)
+        else:
+            name = 'custom'
+            score = metric(data, target)
+
+        if validation:
+            name = 'val_' + name
+
+        return (name, score)
+
     def accuracy(self, data, target):
-        acc = self.eval(self._accuracy,
-                        feed_dict={
-                            self.data: data,
-                            self.target: target
-                        })
-        return acc
+        return accuracy(self.predict(data), target)
+
+    def f1(self, data, target):
+        return f1(self.predict(data), target)
+
+    def precision(self, data, target):
+        return precision(self.predict(data), target)
+
+    def recall(self, data, target):
+        return recall(self.predict(data), target)
 
     def restore(self, model_path):
         if self._sess is not None:
@@ -182,25 +231,7 @@ class Model(object):
             for layer in self._layers:
                 layer.compile()
 
-    def _predict(self, x, **kwargs):
-        output = x
-        for layer in self.layers:
-            output = layer.forward(output, **kwargs)
-
-        return output
-
-    def _set_accuracy(self, y, t):
-        if self._shapes[-1][1] == 1:
-            correct_prediction = \
-                tf.equal(tf.to_float(tf.greater(y, 0.5)), t)
-        else:
-            correct_prediction = \
-                tf.equal(tf.argmax(y, 1), tf.argmax(t, 1))
-
-        self._accuracy = \
-            tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-    def _set_loss_function(self, loss):
+    def _compile_loss(self, loss, data, target):
         losses = {
             'binary_crossentropy': binary_crossentropy,
             'categorical_crossentropy': categorical_crossentropy,
@@ -209,11 +240,18 @@ class Model(object):
         }
 
         if loss in losses:
-            self._loss_function = losses[loss]
+            return losses[loss](data, target)
         else:
-            self._loss_function = loss
+            return loss(data, target)
 
-    def _set_optimize(self, optimizer):
+    def _predict(self, x, **kwargs):
+        output = x
+        for layer in self.layers:
+            output = layer.forward(output, **kwargs)
+
+        return output
+
+    def _optimize(self, optimizer):
         optimizers = {
             'adadelta': adadelta,
             'adagrad': adagrad,
@@ -223,6 +261,6 @@ class Model(object):
         }
 
         if optimizer in optimizers:
-            self._optimize = optimizers[optimizer]
+            return optimizers[optimizer]()
         else:
-            self._optimize = optimizer
+            return optimizer()
