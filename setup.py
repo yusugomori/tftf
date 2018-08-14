@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='tftf',
-    version='0.0.9',
+    version='0.0.10',
     description='TensorFlow TransFormer',
     author='Yusuke Sugomori',
     author_email='me@yusugomori.com',
@@ -11,7 +11,7 @@ setup(
     download_url='',
     license='Apache 2.0',
     install_requires=['numpy>=1.13.3',
-                      'sklearn>=0.19.1'],
+                      'scikit-learn>=0.19.1'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
