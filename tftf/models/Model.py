@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 from sklearn.utils import shuffle
@@ -7,13 +8,17 @@ from .optimizers import *
 
 
 class Model(object):
-    def __init__(self):
+    def __init__(self, reset_graph=True):
+        if reset_graph:
+            tf.reset_default_graph()
         self._layers = []
         self._shapes = []
+        self._sess = None
+        self._restored = False
 
-    # def __del__(self):
-    #     if self._sess is not None:
-    #         self._sess.close()
+    def __del__(self):
+        if self._sess is not None:
+            self._sess.close()
 
     @property
     def layers(self):
@@ -25,8 +30,8 @@ class Model(object):
 
         if input_dim is None:
             if len(self.layers) == 0:
-                raise AttributeError('input_dim must be specified \
-                                      on first layer.')
+                raise AttributeError(('input_dim must be specified '
+                                      'on first layer.'))
             else:
                 layer.input_dim = self._shapes[-1][1]
 
@@ -37,11 +42,13 @@ class Model(object):
         self._layers.append(layer)
 
     def compile(self, loss='mse', optimizer='rmsprop'):
+        if not self._restored:
+            for layer in self._layers:
+                layer.compile()
+
         self._set_loss_function(loss)
         self._set_optimize(optimizer)
 
-        for layer in self._layers:
-            layer.compile()
         input_shape = [None] + list(self.layers[0].input_shape)
         output_shape = [None] + list(self.layers[-1].output_shape)
 
@@ -54,9 +61,11 @@ class Model(object):
         self._loss = self._loss_function(y, t)
         self._set_accuracy(y, t)
         self._train_step = self._optimize().minimize(self._loss)
-        self._init = tf.global_variables_initializer()
-        self._sess = tf.Session()
-        self._sess.run(self._init)
+
+        if not self._restored:
+            self._sess = tf.Session()
+            self._init = tf.global_variables_initializer()
+            self._sess.run(self._init)
 
     def describe(self):
         layers = self.layers
@@ -118,6 +127,29 @@ class Model(object):
                             self.target: target
                         })
         return acc
+
+    def restore(self, model_path):
+        if self._sess is not None:
+            raise AttributeError(('Session alrady initialized. '
+                                  'Model variables must be restored '
+                                  'before compile.'))
+        for layer in self._layers:
+            layer.compile()
+
+        self._sess = tf.Session()
+        saver = tf.train.Saver()
+        saver.restore(self._sess, model_path)
+        self._restored = True
+
+    def save(self, out_path, verbose=1):
+        out_dir = out_path.split('/')[:-1]
+        if len(out_dir) > 0:
+            os.makedirs(os.path.join(*out_dir), exist_ok=True)
+        saver = tf.train.Saver()
+        saver.save(self._sess, out_path)
+
+        if verbose:
+            print('Model saved to: \'{}\''.format(out_path))
 
     def _predict(self, x, **kwargs):
         output = x
