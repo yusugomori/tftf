@@ -10,6 +10,7 @@ class Conv2D(Layer):
                  strides=(1, 1),
                  padding='same',
                  initializer='glorot_uniform',
+                 regularizer=None,
                  rng=None):
         super().__init__()
 
@@ -31,6 +32,7 @@ class Conv2D(Layer):
         self.strides = strides
         self.padding = padding
         self.initializer = initializer
+        self.regularizer = regularizer
 
     @property
     def input_shape(self):
@@ -53,6 +55,9 @@ class Conv2D(Layer):
                                          name='W')
 
         self.params = [self.W]
+
+        if self.regularizer is not None:
+            self.reg_loss = [self.regularizer(self.W)]
 
     def forward(self, x, **kwargs):
         return tf.nn.conv2d(x, self.W,

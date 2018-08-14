@@ -240,9 +240,14 @@ class Model(object):
         }
 
         if loss in losses:
-            return losses[loss](data, target)
+            cost = losses[loss](data, target)
         else:
-            return loss(data, target)
+            cost = loss(data, target)
+
+        for layer in self._layers:
+            cost += tf.reduce_sum(layer.reg_loss)
+
+        return cost
 
     def _predict(self, x, **kwargs):
         output = x
