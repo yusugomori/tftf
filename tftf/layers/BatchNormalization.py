@@ -23,6 +23,8 @@ class BatchNormalization(Layer):
                                     shape=(self.input_dim),
                                     name='beta')
 
+        self.params = [self.gamma, self.beta]
+
     def forward(self, x, **kwargs):
         axes = 0
         if len(x.get_shape()) == 4:

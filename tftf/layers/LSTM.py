@@ -85,6 +85,11 @@ class LSTM(Layer):
         self.b_f = zeros((output_dim), name='b_f')
         self.b_o = zeros((output_dim), name='b_o')
 
+        self.params = [self.W_c, self.W_i, self.W_f, self.W_o,
+                       self.W_recurrent_c, self.W_recurrent_i,
+                       self.W_recurrent_f, self.W_recurrent_o,
+                       self.b_c, self.b_i, self.b_f, self.b_o]
+
     def forward(self, x, **kwargs):
         activation = self.activation
         recurrent_activation = self.recurrent_activation

@@ -30,8 +30,8 @@ class Model(object):
 
         if input_dim is None:
             if len(self.layers) == 0:
-                raise AttributeError(('input_dim must be specified '
-                                      'on first layer.'))
+                raise AttributeError('input_dim must be specified '
+                                     'on first layer.')
             else:
                 layer.input_dim = self._shapes[-1][1]
 
@@ -69,8 +69,26 @@ class Model(object):
 
     def describe(self):
         layers = self.layers
-        for layer in layers:
-            print(layer)
+        digits = int(np.log10(len(layers))) + 1
+        for i, layer in enumerate(layers):
+            print('#{}: {}'.format(str(i).zfill(digits), layer))
+
+    def describe_params(self):
+        layers = self.layers
+        digits = int(np.log10(len(layers))) + 1
+        for i, layer in enumerate(layers):
+            _params = layer.params
+            print('-' * 48)
+            print('#{}: {}'.format(str(i).zfill(digits), layer))
+            print('-' * 48)
+            if len(_params) == 0:
+                print('No params')
+            else:
+                for j, param in enumerate(_params):
+                    print('{}: {}'.format(param.name,
+                                          param.get_shape()))
+            if i == len(layers) - 1:
+                print('-' * 48)
 
     def eval(self, elem, feed_dict):
         return self._sess.run(elem, feed_dict=feed_dict)
@@ -130,9 +148,9 @@ class Model(object):
 
     def restore(self, model_path):
         if self._sess is not None:
-            raise AttributeError(('Session alrady initialized. '
-                                  'Model variables must be restored '
-                                  'before compile.'))
+            raise AttributeError('Session alrady initialized. '
+                                 'Model variables must be restored '
+                                 'before compile.')
         for layer in self._layers:
             layer.compile()
 
