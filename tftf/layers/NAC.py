@@ -28,5 +28,7 @@ class NAC(Layer):
                                     name='W_hat')
         self.W = tanh(self.W_hat) * sigmoid(self.M_hat)
 
+        self.params = [self.W_hat, self.M_hat]
+
     def forward(self, x, **kwargs):
         return tf.matmul(x, self.W)

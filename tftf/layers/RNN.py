@@ -37,11 +37,13 @@ class RNN(Layer):
         self.W = self.kernel_initializer(initializer,
                                          shape=(input_dim, output_dim),
                                          name='W')
-        self.b = zeros((output_dim), name='b')
         self.W_recurrent = \
             self.kernel_initializer(recurrent_initializer,
                                     shape=(output_dim, output_dim),
                                     name='W_recurrent')
+        self.b = zeros((output_dim), name='b')
+
+        self.params = [self.W, self.W_recurrent, self.b]
 
     def forward(self, x, **kwargs):
         # TODO: masking padding_value

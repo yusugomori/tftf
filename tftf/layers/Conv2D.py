@@ -52,6 +52,8 @@ class Conv2D(Layer):
                                          shape=kernel_shape,
                                          name='W')
 
+        self.params = [self.W]
+
     def forward(self, x, **kwargs):
         return tf.nn.conv2d(x, self.W,
                             strides=self._strides,

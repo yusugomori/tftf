@@ -6,11 +6,16 @@ class Layer(object):
     def __init__(self):
         self._input_dim = None
         self._output_dim = None
+        self._params = []
 
     def __repr__(self):
-        return '<{}: shape({}, {})>'.format(self.__class__.__name__,
+        return '<{}: shape({}, {})>'.format(self.name,
                                             self.input_dim,
                                             self.output_dim)
+
+    @property
+    def name(self):
+        return self.__class__.__name__
 
     @property
     def shape(self):
@@ -25,6 +30,10 @@ class Layer(object):
         self._input_dim = val
 
     @property
+    def input_shape(self):
+        return (self.input_dim,)
+
+    @property
     def output_dim(self):
         return self._output_dim
 
@@ -33,12 +42,19 @@ class Layer(object):
         self._output_dim = val
 
     @property
-    def input_shape(self):
-        return (self.input_dim,)
-
-    @property
     def output_shape(self):
         return (self.output_dim,)
+
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, val):
+        if type(val).__name__ != 'list':
+            raise AttributeError('type of params must be \'list\', '
+                                 'not \'{}\'.'.format(type(val).__name__))
+        self._params = val
 
     def activation_initializer(self, activation):
         activations = {
