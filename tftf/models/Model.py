@@ -8,9 +8,13 @@ from .optimizers import *
 
 
 class Model(object):
-    def __init__(self, reset_graph=True):
+    def __init__(self,
+                 name='model',
+                 reset_graph=True):
         if reset_graph:
             tf.reset_default_graph()
+
+        self._name = name if name is not None else ''
         self._layers = []
         self._shapes = []
         self._sess = None
@@ -43,8 +47,7 @@ class Model(object):
 
     def compile(self, loss='mse', optimizer='rmsprop'):
         if not self._restored:
-            for layer in self._layers:
-                layer.compile()
+            self._compile_layers()
 
         self._set_loss_function(loss)
         self._set_optimize(optimizer)
@@ -66,6 +69,13 @@ class Model(object):
             self._sess = tf.Session()
             self._init = tf.global_variables_initializer()
             self._sess.run(self._init)
+        else:
+            uninitialized_variables = [
+                var for var in tf.global_variables()
+                if var.name.split(':')[0].encode()
+                in set(self._sess.run(tf.report_uninitialized_variables()))
+            ]
+            self._sess.run(tf.variables_initializer(uninitialized_variables))
 
     def describe(self):
         layers = self.layers
@@ -151,9 +161,7 @@ class Model(object):
             raise AttributeError('Session alrady initialized. '
                                  'Model variables must be restored '
                                  'before compile.')
-        for layer in self._layers:
-            layer.compile()
-
+        self._compile_layers()
         self._sess = tf.Session()
         saver = tf.train.Saver()
         saver.restore(self._sess, model_path)
@@ -168,6 +176,11 @@ class Model(object):
 
         if verbose:
             print('Model saved to: \'{}\''.format(out_path))
+
+    def _compile_layers(self):
+        with tf.variable_scope(self._name):
+            for layer in self._layers:
+                layer.compile()
 
     def _predict(self, x, **kwargs):
         output = x
