@@ -1,3 +1,5 @@
+from . import regularizers
+
 from .Activation import Activation
 from .BatchNormalization import BatchNormalization
 from .Conv2D import Conv2D

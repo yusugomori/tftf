@@ -33,17 +33,17 @@ if __name__ == '__main__':
     model.add(Conv2D(input_dim=(28, 28, 1),
                      kernel_size=(3, 3, 20),
                      padding='valid'))
-    model.add(Activation('relu'))
+    model.add(Activation('tanh'))
     model.add(MaxPooling2D())
     model.add(Conv2D(kernel_size=(3, 3, 50),
                      padding='valid'))
-    model.add(Activation('relu'))
+    model.add(Activation('tanh'))
     model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(1024))
-    model.add(Activation('relu'))
+    model.add(Activation('tanh'))
     model.add(Dense(200))
-    model.add(Activation('relu'))
+    model.add(Activation('tanh'))
     model.add(Dense(10))
     model.add(Activation('softmax'))
     model.compile()

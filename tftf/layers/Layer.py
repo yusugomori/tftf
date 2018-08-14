@@ -7,6 +7,7 @@ class Layer(object):
         self._input_dim = None
         self._output_dim = None
         self._params = []
+        self._reg_loss = []
 
     def __repr__(self):
         return '<{}: shape({}, {})>'.format(self.name,
@@ -55,6 +56,17 @@ class Layer(object):
             raise AttributeError('type of params must be \'list\', '
                                  'not \'{}\'.'.format(type(val).__name__))
         self._params = val
+
+    @property
+    def reg_loss(self):
+        return self._reg_loss
+
+    @reg_loss.setter
+    def reg_loss(self, val):
+        if type(val).__name__ != 'list':
+            raise AttributeError('type of reg_loss must be \'list\', '
+                                 'not \'{}\'.'.format(type(val).__name__))
+        self._reg_loss = val
 
     def activation_initializer(self, activation):
         activations = {
