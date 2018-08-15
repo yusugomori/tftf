@@ -4,6 +4,13 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tftf.layers import Dense, Activation, NALU
+from tftf import regularizers as reg
+# from tftf.initializers import glorot_normal
+from tftf import initializers as ini
+from tftf import activations as act
+from tftf import losses as loss
+from tftf import optimizers as opt
+from tftf.metrics import accuracy, f1
 
 
 if __name__ == '__main__':
@@ -37,33 +44,24 @@ if __name__ == '__main__':
     x = tf.placeholder(tf.float32, shape=[None, n_in])
     t = tf.placeholder(tf.float32, shape=[None, n_out])
 
-    W = tf.Variable(tf.truncated_normal([n_in, n_hidden], stddev=0.1))
-    b = tf.Variable(tf.zeros([n_hidden]))
-    h = tf.nn.tanh(tf.matmul(x, W) + b)
+    W = ini.glorot_normal([n_in, n_hidden], name='W0')
+    b = ini.zeros([n_hidden], name='b0')
+    h = act.tanh(tf.matmul(x, W) + b)
 
-    # add layers with tftf.layers
-    layer = Dense(n_hidden, input_dim=n_hidden)
+    W = ini.glorot_normal([n_hidden, n_hidden], name='W1')
+    b = ini.zeros([n_hidden], name='b1')
+    h = act.tanh(tf.matmul(h, W) + b)
+
+    layer = NALU(n_hidden, input_dim=n_hidden)  # import from tftf.layers
     layer.compile()
     h = layer.forward(h)
 
-    layer = Activation('tanh')
-    layer.compile()
-    h = layer.forward(h)
+    W = ini.glorot_normal([n_hidden, n_out], name='W_out')
+    b = ini.zeros([n_out], name='b_out')
+    y = act.softmax(tf.matmul(h, W) + b)
 
-    layer = NALU(n_hidden, input_dim=n_hidden)
-    layer.compile()
-    h = layer.forward(h)
-
-    W = tf.Variable(tf.truncated_normal([n_hidden, n_out], stddev=0.1))
-    b = tf.Variable(tf.zeros([n_out]))
-    y = tf.nn.softmax(tf.matmul(h, W) + b)
-
-    cross_entropy = tf.reduce_mean(-tf.reduce_sum(t * tf.log(y), axis=1))
-    train_step = \
-        tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
-
-    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(t, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    cost = loss.categorical_crossentropy(y, t)
+    train_step = opt.sgd(0.01).minimize(cost)
 
     '''
     Train model
@@ -89,21 +87,21 @@ if __name__ == '__main__':
                 t: _y[start:end]
             })
 
-        loss = cross_entropy.eval(session=sess, feed_dict={
+        loss = cost.eval(session=sess, feed_dict={
             x: _X,
             t: _y
         })
-        acc = accuracy.eval(session=sess, feed_dict={
-            x: _X,
-            t: _y
-        })
-        print('epoch:', epoch, ' loss:', loss, ' accuracy:', acc)
+
+        preds = y.eval(session=sess, feed_dict={x: _X})
+        acc = accuracy(preds, _y)
+
+        print('epoch: {}, loss: {:.3}, acc: {:.3}'.format(epoch, loss, acc))
 
     '''
     Test model
     '''
-    accuracy_rate = accuracy.eval(session=sess, feed_dict={
-        x: test_X,
-        t: test_y
-    })
-    print('accuracy: ', accuracy_rate)
+    preds = y.eval(session=sess, feed_dict={x: test_X})
+    acc = accuracy(preds, test_y)
+    f = f1(preds, test_y)
+    print('accuracy: {:.3}'.format(acc))
+    print('f1: {:.3}'.format(f))

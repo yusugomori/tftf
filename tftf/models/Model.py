@@ -262,7 +262,8 @@ class Model(object):
             'adagrad': adagrad,
             'adam': adam,
             'momentum': momentum,
-            'rmsprop': rmsprop
+            'rmsprop': rmsprop,
+            'sgd': sgd
         }
 
         if optimizer in optimizers:
