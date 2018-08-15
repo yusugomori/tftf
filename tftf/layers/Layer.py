@@ -70,8 +70,13 @@ class Layer(object):
 
     def activation_initializer(self, activation):
         activations = {
+            'elu': elu,
+            'hard_sigmoid': hard_sigmoid,
+            'leaky_relu': leaky_relu,
             'linear': linear,
+            # 'prelu': prelu,
             'relu': relu,
+            'selu': selu,
             'sigmoid': sigmoid,
             'softmax': softmax,
             'swish': swish,
