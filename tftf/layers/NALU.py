@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .NAC import NAC
-from ..activations import sigmoid
+from .activations import sigmoid
 
 
 class NALU(NAC):

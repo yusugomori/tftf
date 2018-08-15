@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .Layer import Layer
-from ..activations import sigmoid, tanh
+from .activations import sigmoid, tanh
 
 
 class NAC(Layer):
