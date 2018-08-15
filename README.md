@@ -73,7 +73,7 @@ t = tf.placeholder(tf.float32, shape=[None, 10])
 
 # import APIs
 W = ini.glorot_normal([784, 200])  # or just write tf.Variable(...)
-b = ini.zeros(tf.zeros([200]))
+b = ini.zeros([200])
 h = act.tanh(tf.matmul(x, W) + b)  # or just write tf.nn.tanh(...)
 
 # import Layers
