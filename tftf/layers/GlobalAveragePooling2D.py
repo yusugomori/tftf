@@ -2,7 +2,7 @@ import tensorflow as tf
 from .Layer import Layer
 
 
-class GlobalAveragePooling(Layer):
+class GlobalAveragePooling2D(Layer):
     def __init__(self):
         super().__init__()
 

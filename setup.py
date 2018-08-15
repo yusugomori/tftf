@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='tftf',
-    version='0.0.14',
+    version='0.0.15',
     description='TensorFlow TransFormer',
     author='Yusuke Sugomori',
     author_email='me@yusugomori.com',
