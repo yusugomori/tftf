@@ -53,7 +53,8 @@ if __name__ == '__main__':
     model.fit(train_X, train_y,
               validation_data=(valid_X, valid_y),
               metrics=['accuracy', 'f1'],
-              epochs=10)
+              early_stopping=3,
+              epochs=1000)
 
     '''
     Test model

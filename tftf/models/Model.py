@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.utils import shuffle
 from ..layers import Dense
+from .callbacks import EarlyStopping
 from .losses import *
 from .metrics import *
 from .optimizers import *
@@ -105,9 +106,18 @@ class Model(object):
             epochs=10, batch_size=100,
             validation_data=None,
             metrics=['accuracy'],
+            early_stopping=-1,
             verbose=1):
+
         if len(data) != len(target):
             raise AttributeError('Length of X and y does not match.')
+
+        es = None
+        if early_stopping > -1:
+            if validation_data is None:
+                raise AttributeError('early_stopping needs validation_data.')
+            es = EarlyStopping(patience=early_stopping, verbose=verbose)
+
         n_data = len(data)
         n_batches = n_data // batch_size
 
@@ -157,6 +167,9 @@ class Model(object):
                                                    validation=True))
                     out += _format(results)
                 print(out)
+                if es is not None:
+                    if es.on_epoch_end(epoch, val_loss):
+                        break
 
     def predict(self, data):
         ret = self.eval(self._y,
