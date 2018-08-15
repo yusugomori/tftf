@@ -56,21 +56,27 @@ cd tftf
 sudo python setup.py install
 ```
 
-## Importable Layer
+## Importable Layers, APIs
 
-You can just use `tftf.layers` to your own TensorFlow implementations.
+You can import low-level tftf APIs to your own TensorFlow implementations.
 
 ```python
 from tftf.layers import Dense, Activation, NALU
+from tftf import initializers as ini
+from tftf import activations as act
+from tftf import losses as loss
+from tftf import optimizers as opt
+from tftf.metrics import accuracy, f1
 
 x = tf.placeholder(tf.float32, shape=[None, 784])
 t = tf.placeholder(tf.float32, shape=[None, 10])
 
-W = tf.Variable(tf.truncated_normal([784, 200], stddev=0.1))
-b = tf.Variable(tf.zeros([200]))
-h = tf.nn.tanh(tf.matmul(x, W) + b)
+# import APIs
+W = ini.glorot_normal([784, 200])  # or just write tf.Variable(...)
+b = ini.zeros(tf.zeros([200]))
+h = act.tanh(tf.matmul(x, W) + b)  # or just write tf.nn.tanh(...)
 
-# add tftf.layers into pure TF implementations
+# import Layers
 layer = Dense(200, input_dim=200)
 layer.compile()
 h = layer.forward(h)
@@ -83,14 +89,19 @@ layer = NALU(200, input_dim=200)
 layer.compile()
 h = layer.forward(h)
 
-W = tf.Variable(tf.truncated_normal([200, 10], stddev=0.1))
-b = tf.Variable(tf.zeros([10]))
-y = tf.nn.softmax(tf.matmul(h, W) + b)
+W = ini.glorot_normal([200, 10])
+b = ini.zeros([10])
+y = act.softmax(tf.matmul(h, W) + b)
 
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(t * tf.log(y), axis=1))
-train_step = \
-    tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
+cost = loss.categorical_crossentropy(y, t)
+train_step = opt.sgd(0.01).minimize(cost)
 
-correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(t, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+# Train
+#     ...
+
+preds = y.eval(session=sess, feed_dict={x: test_X})
+acc = accuracy(preds, test_y)
+f = f1(preds, test_y)
+print('accuracy: {:.3}'.format(acc))
+print('f1: {:.3}'.format(f))
 ```

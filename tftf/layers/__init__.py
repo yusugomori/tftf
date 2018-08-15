@@ -1,3 +1,5 @@
+from . import activations
+from . import initializers
 from . import regularizers
 
 from .Activation import Activation

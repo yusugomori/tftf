@@ -1,5 +1,5 @@
+from .activations import *
 from .initializers import *
-from ..activations import *
 
 
 class Layer(object):
