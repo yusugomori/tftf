@@ -8,6 +8,7 @@ from .Conv2D import Conv2D
 from .Dense import Dense
 from .Dropout import Dropout
 from .Flatten import Flatten
+from .GlobalAveragePooling import GlobalAveragePooling
 from .Layer import Layer
 from .LSTM import LSTM
 from .MaxPooling2D import MaxPooling2D
