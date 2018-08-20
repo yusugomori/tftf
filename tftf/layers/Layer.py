@@ -14,6 +14,23 @@ class Layer(object):
                                             self.input_dim,
                                             self.output_dim)
 
+    def __call__(self, x, **kwargs):
+        input_shape = x.get_shape().as_list()
+        if len(input_shape) == 2:
+            self.input_dim = input_shape[1]
+        else:
+            self.input_dim = tuple(input_shape[1:])
+        self.compile()
+        x = self.forward(x)
+
+        output_shape = x.get_shape().as_list()
+        if len(output_shape) == 2:
+            self.output_dim = output_shape[1]
+        else:
+            self.output_dim = tuple(output_shape[1:])
+
+        return x
+
     @property
     def name(self):
         return self.__class__.__name__
