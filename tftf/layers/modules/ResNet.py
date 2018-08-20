@@ -17,7 +17,7 @@ class ResNet(Module):
         t = tf.placeholder(tf.float32, shape=[None, 10])
 
         resnet = ResNet()
-        h = resnet.v1(x, n_out=10)
+        h = resnet.v1(x)
         h = Activation('relu')(h)
         h = Dense(10)(h)
         y = Activation('softmax')(h)
