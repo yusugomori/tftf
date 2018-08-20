@@ -65,6 +65,7 @@ class MaxPooling2D(Layer):
         if padding == 'SAME':
             return input_shape
         else:
-            return tuple(list((np.array(input_shape[:2])
-                               - np.array(pool_size))
-                              // np.array(strides) + 1) + [input_shape[2]])
+            return tuple(list(np.ceil((np.array(input_shape[:2])
+                                       - np.array(pool_size) + 1)
+                                      / np.array(strides)).astype('int32'))
+                         + [input_shape[2]])
