@@ -77,17 +77,9 @@ b = ini.zeros([200])
 h = act.tanh(tf.matmul(x, W) + b)  # or just write tf.nn.tanh(...)
 
 # import Layers
-layer = Dense(200, input_dim=200)
-layer.compile()
-h = layer.forward(h)
-
-layer = Activation('tanh')
-layer.compile()
-h = layer.forward(h)
-
-layer = NALU(200, input_dim=200)
-layer.compile()
-h = layer.forward(h)
+h = Dense(200)(h)
+h = Activation('tanh')(h)
+h = NALU(200)(h)
 
 W = ini.glorot_normal([200, 10])
 b = ini.zeros([10])
