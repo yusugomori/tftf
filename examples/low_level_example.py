@@ -52,8 +52,7 @@ if __name__ == '__main__':
     b = ini.zeros([n_hidden], name='b1')
     h = act.tanh(tf.matmul(h, W) + b)
 
-    layer = NALU(n_hidden, input_dim=n_hidden)  # import from tftf.layers
-    h = layer(h)
+    h = NALU(n_hidden)(h)  # import from tftf.layers
 
     W = ini.glorot_normal([n_hidden, n_out], name='W_out')
     b = ini.zeros([n_out], name='b_out')
