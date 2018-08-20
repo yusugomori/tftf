@@ -81,6 +81,7 @@ class Conv2D(Layer):
         if padding == 'SAME':
             return tuple(list(image_size) + [channel])
         else:
-            return tuple(list((np.array(image_size)
-                               - np.array(kernel_size[:2]))
-                              // np.array(strides) + 1) + [channel])
+            return tuple(list(np.ceil((np.array(image_size)
+                                       - np.array(kernel_size[:2]) + 1)
+                                      / np.array(strides)).astype('int32'))
+                         + [channel])
