@@ -167,9 +167,9 @@ class Model(object):
                                                    validation=True))
                     out += _format(results)
                 print(out)
-                if es is not None:
-                    if es.on_epoch_end(epoch, val_loss):
-                        break
+            if es is not None:
+                if es.on_epoch_end(epoch, val_loss):
+                    break
 
     def predict(self, data):
         ret = self.eval(self._y,

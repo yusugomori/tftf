@@ -1,19 +1,17 @@
 import numpy as np
 import tensorflow as tf
-from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from tftf.datasets import load_mnist
 from tftf.layers import Layer, Dense, Activation, Dropout
 from tftf.models import Model
 
 
 if __name__ == '__main__':
-    np.random.seed(0)
-    tf.set_random_seed(0)
     '''
     Load data
     '''
-    mnist = datasets.fetch_mldata('MNIST original', data_home='.')
+    mnist = load_mnist(train_test_split=False, flatten=True)
 
     n = len(mnist.data)
     N = 30000
@@ -21,11 +19,9 @@ if __name__ == '__main__':
 
     X = mnist.data[indices]
     X = X / 255.0
-    X = X - X.mean(axis=1).reshape(len(X), 1)
     y = mnist.target[indices]
-    Y = np.eye(10)[y.astype(int)]
 
-    train_X, test_X, train_y, test_y = train_test_split(X, Y)
+    train_X, test_X, train_y, test_y = train_test_split(X, y)
 
     '''
     Build model

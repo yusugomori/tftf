@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from tftf.datasets import load_mnist
 from tftf.layers import Dense, Activation, BatchNormalization, Dropout, \
     Conv2D, MaxPooling2D, GlobalAveragePooling2D
 from tftf.models import Model
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     '''
     Load data
     '''
-    mnist = datasets.fetch_mldata('MNIST original', data_home='.')
+    mnist = load_mnist(train_test_split=False)
 
     n = len(mnist.data)
     N = 30000
@@ -20,12 +20,9 @@ if __name__ == '__main__':
 
     X = mnist.data[indices]
     X = X / 255.0
-    X = X - X.mean(axis=1).reshape(len(X), 1)
-    X = X.reshape(-1, 28, 28, 1)
     y = mnist.target[indices]
-    Y = np.eye(10)[y.astype(int)]
 
-    train_X, test_X, train_y, test_y = train_test_split(X, Y)
+    train_X, test_X, train_y, test_y = train_test_split(X, y)
 
     '''
     Build model
