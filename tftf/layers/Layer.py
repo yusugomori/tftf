@@ -1,3 +1,4 @@
+import tensorflow as tf
 from .activations import *
 from .initializers import *
 
@@ -6,6 +7,8 @@ class Layer(object):
     def __init__(self):
         self._input_dim = None
         self._output_dim = None
+        self._input_dtype = tf.float32
+        self._output_dtype = tf.float32
         self._params = []
         self._reg_loss = []
 
@@ -52,6 +55,10 @@ class Layer(object):
         return (self.input_dim,)
 
     @property
+    def input_dtype(self):
+        return self._input_dtype
+
+    @property
     def output_dim(self):
         return self._output_dim
 
@@ -62,6 +69,10 @@ class Layer(object):
     @property
     def output_shape(self):
         return (self.output_dim,)
+
+    @property
+    def output_dtype(self):
+        return self._output_dtype
 
     @property
     def params(self):

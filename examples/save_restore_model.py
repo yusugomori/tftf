@@ -36,7 +36,7 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    model.fit(train_X, train_y, epochs=3)
+    model.fit(train_X, train_y, epochs=3, metrics=['accuracy'])
 
     '''
     Test model

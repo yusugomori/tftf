@@ -55,7 +55,8 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    model.fit(train_X, train_y)
+    model.fit(train_X, train_y,
+              metrics=['accuracy'])
 
     '''
     Test model

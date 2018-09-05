@@ -47,15 +47,21 @@ class Model(object):
         self._shapes.append(layer.shape)
         self._layers.append(layer)
 
-    def compile(self, loss='mse', optimizer='rmsprop'):
+    def compile(self, loss='mse', optimizer='rmsprop',
+                variable_input=False):
         if not self._restored:
             self._compile_layers()
 
-        input_shape = [None] + list(self.layers[0].input_shape)
+        if not variable_input:
+            input_shape = [None] + list(self.layers[0].input_shape)
+        else:
+            input_shape = [None] + [None] * len(self.layers[0].input_shape)
         output_shape = [None] + list(self.layers[-1].output_shape)
 
-        x = self.data = tf.placeholder(tf.float32, shape=input_shape)
-        t = self.target = tf.placeholder(tf.float32, shape=output_shape)
+        x = self.data = \
+            tf.placeholder(self.layers[0].input_dtype, shape=input_shape)
+        t = self.target = \
+            tf.placeholder(self.layers[-1].output_dtype, shape=output_shape)
         training = self.training = \
             tf.placeholder_with_default(False, ())
 
@@ -105,7 +111,7 @@ class Model(object):
     def fit(self, data, target,
             epochs=10, batch_size=100,
             validation_data=None,
-            metrics=['accuracy'],
+            metrics=[],
             early_stopping=-1,
             verbose=1):
 
