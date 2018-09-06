@@ -138,7 +138,7 @@ class Model(object):
         n_batches = n_data // batch_size
 
         for epoch in range(epochs):
-            loss = 0.
+            results = [['loss', 0.]]
             indices = shuffle(np.arange(n_data))
             _data = data[indices]
             _target = target[indices]
@@ -159,7 +159,15 @@ class Model(object):
                               self.target: _batch_target,
                               self.training: True
                           })
-                loss += self.loss(_batch_data, _batch_target)
+                results[0][1] += self.loss(_batch_data, _batch_target)
+
+                if verbose:
+                    for j, metric in enumerate(metrics):
+                        _res = self.metric(metric, _batch_data, _batch_target)
+                        if i == 0:
+                            results.append(_res)
+                        else:
+                            results[j+1][1] += _res[1]
 
             if validation_data is not None:
                 val_data = validation_data[0]
@@ -175,11 +183,8 @@ class Model(object):
                                          results))
 
                 out = 'epoch: {}, '.format(epoch + 1)
-                results = [('loss', loss)]
-
-                # TODO
-                # for metric in metrics:
-                #     results.append(self.metric(metric, _data, _target))
+                for i, res in enumerate(results):
+                    results[i][1] /= n_batches
 
                 out += _format(results)
 
@@ -230,7 +235,10 @@ class Model(object):
         if validation:
             name = 'val_' + name
 
-        return (name, score)
+        if not validation:
+            return [name, score]
+        else:
+            return (name, score)
 
     def accuracy(self, data, target):
         return accuracy(self.predict(data), target)
