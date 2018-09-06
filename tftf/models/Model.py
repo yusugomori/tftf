@@ -48,7 +48,9 @@ class Model(object):
         self._layers.append(layer)
 
     def compile(self, loss='mse', optimizer='rmsprop',
-                variable_input=False):
+                variable_input=False,
+                use_mask=False,
+                pad_value=0):
         if not self._restored:
             self._compile_layers()
 
@@ -59,13 +61,20 @@ class Model(object):
         output_shape = [None] + list(self.layers[-1].output_shape)
 
         x = self.data = \
-            tf.placeholder(self.layers[0].input_dtype, shape=input_shape)
+            tf.placeholder(self.layers[0].input_dtype,
+                           shape=input_shape, name='x')
         t = self.target = \
-            tf.placeholder(self.layers[-1].output_dtype, shape=output_shape)
+            tf.placeholder(self.layers[-1].output_dtype,
+                           shape=output_shape, name='t')
+
+        if use_mask:
+            mask = tf.cast(tf.not_equal(x, pad_value), tf.float32)
+        else:
+            mask = None
         training = self.training = \
             tf.placeholder_with_default(False, ())
 
-        y = self._y = self._predict(x, training=training)
+        y = self._y = self._predict(x, training=training, mask=mask)
         self._loss = self._compile_loss(loss, y, t)
         self._train_step = \
             self._optimize(optimizer).minimize(self._loss)

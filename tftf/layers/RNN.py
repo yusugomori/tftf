@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from .Layer import Layer
 from .initializers import zeros
@@ -46,13 +47,17 @@ class RNN(Layer):
         self.params = [self.W, self.W_recurrent, self.b]
 
     def forward(self, x, **kwargs):
-        # TODO: masking padding_value
         def _recurrent(state, elems):
-            state = \
-                self.recurrent_activation(tf.matmul(elems, self.W)
+            x = elems[0]
+            mask = elems[1]
+            h = self.recurrent_activation(tf.matmul(x, self.W)
                                           + tf.matmul(state, self.W_recurrent)
                                           + self.b)
-            return state
+            if mask is None:
+                return h
+            else:
+                mask = mask[:, np.newaxis]
+                return mask * h + (1 - mask) * state
 
         initial_state = self._initial_state
         if initial_state is None:
@@ -60,8 +65,12 @@ class RNN(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
+        mask = kwargs['mask']
+        if mask is not None:
+            mask = tf.transpose(mask)
+
         states = tf.scan(fn=_recurrent,
-                         elems=tf.transpose(x, perm=[1, 0, 2]),
+                         elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
                          initializer=initial_state)
 
         if self._return_sequence is True:
