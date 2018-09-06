@@ -121,6 +121,7 @@ class Model(object):
             epochs=10, batch_size=100,
             validation_data=None,
             metrics=[],
+            preprocesses=[],
             early_stopping=-1,
             verbose=1):
 
@@ -137,6 +138,7 @@ class Model(object):
         n_batches = n_data // batch_size
 
         for epoch in range(epochs):
+            loss = 0.
             indices = shuffle(np.arange(n_data))
             _data = data[indices]
             _target = target[indices]
@@ -145,15 +147,24 @@ class Model(object):
                 _start = i * batch_size
                 _end = _start + batch_size
 
+                _batch_data = _data[_start:_end]
+                _batch_target = _target[_start:_end]
+
+                for _preprocess in preprocesses:
+                    _batch_data = _preprocess(_batch_data)
+
                 self.eval(self._train_step,
                           feed_dict={
-                              self.data: _data[_start:_end],
-                              self.target: _target[_start:_end],
+                              self.data: _batch_data,
+                              self.target: _batch_target,
                               self.training: True
                           })
+                loss += self.loss(_batch_data, _batch_target)
 
             if validation_data is not None:
                 val_data = validation_data[0]
+                for _preprocess in preprocesses:
+                    val_data = _preprocess(val_data)
                 val_target = validation_data[1]
                 val_loss = self.loss(val_data, val_target)
 
@@ -164,11 +175,11 @@ class Model(object):
                                          results))
 
                 out = 'epoch: {}, '.format(epoch + 1)
-                loss = self.loss(_data, _target)
                 results = [('loss', loss)]
 
-                for metric in metrics:
-                    results.append(self.metric(metric, _data, _target))
+                # TODO
+                # for metric in metrics:
+                #     results.append(self.metric(metric, _data, _target))
 
                 out += _format(results)
 

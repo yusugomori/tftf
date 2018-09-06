@@ -19,9 +19,11 @@ def pad_sequences(data,
         data = \
             [[value] * (maxlen - len(data[i])) + data[i]
              for i in range(len(data))]
-    else:
+    elif padding == 'post':
         data = \
             [data[i] + [value] * (maxlen - len(data[i]))
              for i in range(len(data))]
+    else:
+        raise ValueError('`padding` must be one of \'pre\' or \'post\'')
 
     return np.array(data)
