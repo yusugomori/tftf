@@ -47,19 +47,35 @@ class Model(object):
         self._shapes.append(layer.shape)
         self._layers.append(layer)
 
-    def compile(self, loss='mse', optimizer='rmsprop'):
+    def compile(self, loss='mse', optimizer='rmsprop',
+                variable_input=False,
+                use_mask=False,
+                pad_value=0):
         if not self._restored:
             self._compile_layers()
 
-        input_shape = [None] + list(self.layers[0].input_shape)
+        if not variable_input:
+            input_shape = [None] + list(self.layers[0].input_shape)
+        else:
+            input_shape = [None] + [None] * len(self.layers[0].input_shape)
         output_shape = [None] + list(self.layers[-1].output_shape)
 
-        x = self.data = tf.placeholder(tf.float32, shape=input_shape)
-        t = self.target = tf.placeholder(tf.float32, shape=output_shape)
+        x = self.data = \
+            tf.placeholder(self.layers[0].input_dtype,
+                           shape=input_shape, name='x')
+        t = self.target = \
+            tf.placeholder(self.layers[-1].output_dtype,
+                           shape=output_shape, name='t')
+
+        if use_mask:
+            mask = tf.cast(tf.not_equal(x, pad_value), tf.float32)
+        else:
+            mask = None
+
         training = self.training = \
             tf.placeholder_with_default(False, ())
 
-        y = self._y = self._predict(x, training=training)
+        y = self._y = self._predict(x, training=training, mask=mask)
         self._loss = self._compile_loss(loss, y, t)
         self._train_step = \
             self._optimize(optimizer).minimize(self._loss)
@@ -105,7 +121,8 @@ class Model(object):
     def fit(self, data, target,
             epochs=10, batch_size=100,
             validation_data=None,
-            metrics=['accuracy'],
+            metrics=[],
+            preprocesses=[],
             early_stopping=-1,
             verbose=1):
 
@@ -122,6 +139,7 @@ class Model(object):
         n_batches = n_data // batch_size
 
         for epoch in range(epochs):
+            results = [['loss', 0.]]
             indices = shuffle(np.arange(n_data))
             _data = data[indices]
             _target = target[indices]
@@ -130,15 +148,32 @@ class Model(object):
                 _start = i * batch_size
                 _end = _start + batch_size
 
+                _batch_data = _data[_start:_end]
+                _batch_target = _target[_start:_end]
+
+                for _preprocess in preprocesses:
+                    _batch_data = _preprocess(_batch_data)
+
                 self.eval(self._train_step,
                           feed_dict={
-                              self.data: _data[_start:_end],
-                              self.target: _target[_start:_end],
+                              self.data: _batch_data,
+                              self.target: _batch_target,
                               self.training: True
                           })
+                results[0][1] += self.loss(_batch_data, _batch_target)
+
+                if verbose:
+                    for j, metric in enumerate(metrics):
+                        _res = self.metric(metric, _batch_data, _batch_target)
+                        if i == 0:
+                            results.append(_res)
+                        else:
+                            results[j+1][1] += _res[1]
 
             if validation_data is not None:
                 val_data = validation_data[0]
+                for _preprocess in preprocesses:
+                    val_data = _preprocess(val_data)
                 val_target = validation_data[1]
                 val_loss = self.loss(val_data, val_target)
 
@@ -149,11 +184,8 @@ class Model(object):
                                          results))
 
                 out = 'epoch: {}, '.format(epoch + 1)
-                loss = self.loss(_data, _target)
-                results = [('loss', loss)]
-
-                for metric in metrics:
-                    results.append(self.metric(metric, _data, _target))
+                for i, res in enumerate(results):
+                    results[i][1] /= n_batches
 
                 out += _format(results)
 
@@ -204,7 +236,10 @@ class Model(object):
         if validation:
             name = 'val_' + name
 
-        return (name, score)
+        if not validation:
+            return [name, score]
+        else:
+            return (name, score)
 
     def accuracy(self, data, target):
         return accuracy(self.predict(data), target)

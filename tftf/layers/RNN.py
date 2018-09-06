@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from .Layer import Layer
 from .initializers import zeros
@@ -23,6 +24,7 @@ class RNN(Layer):
         self._length_of_sequences = length_of_sequences
         self._return_sequence = return_sequence
         self._initial_state = initial_state
+        self._use_mask = False
 
     @property
     def input_shape(self):
@@ -46,13 +48,20 @@ class RNN(Layer):
         self.params = [self.W, self.W_recurrent, self.b]
 
     def forward(self, x, **kwargs):
-        # TODO: masking padding_value
         def _recurrent(state, elems):
-            state = \
-                self.recurrent_activation(tf.matmul(elems, self.W)
+            if not self._use_mask:
+                x = elems
+            else:
+                x = elems[0]
+                mask = elems[1]
+            h = self.recurrent_activation(tf.matmul(x, self.W)
                                           + tf.matmul(state, self.W_recurrent)
                                           + self.b)
-            return state
+            if not self._use_mask:
+                return h
+            else:
+                mask = mask[:, np.newaxis]
+                return mask * h + (1 - mask) * state
 
         initial_state = self._initial_state
         if initial_state is None:
@@ -60,9 +69,17 @@ class RNN(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        states = tf.scan(fn=_recurrent,
-                         elems=tf.transpose(x, perm=[1, 0, 2]),
-                         initializer=initial_state)
+        mask = kwargs['mask']
+        if mask is None:
+            states = tf.scan(fn=_recurrent,
+                             elems=tf.transpose(x, perm=[1, 0, 2]),
+                             initializer=initial_state)
+        else:
+            self._use_mask = True
+            mask = tf.transpose(mask)
+            states = tf.scan(fn=_recurrent,
+                             elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
+                             initializer=initial_state)
 
         if self._return_sequence is True:
             return tf.transpose(states, perm=[1, 0, 2])

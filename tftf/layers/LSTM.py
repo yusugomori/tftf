@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from .Layer import Layer
 from .initializers import zeros
@@ -29,6 +30,7 @@ class LSTM(Layer):
         self._return_sequence = return_sequence
         self._initial_state = initial_state
         self._cell_state = cell_state
+        self._use_mask = False
 
     @property
     def cell_state(self):
@@ -94,25 +96,36 @@ class LSTM(Layer):
         activation = self.activation
         recurrent_activation = self.recurrent_activation
 
-        # TODO: masking padding_value
         def _recurrent(state, elems):
-            a = activation(tf.matmul(elems, self.W_c)
+            if not self._use_mask:
+                x = elems
+            else:
+                x = elems[0]
+                mask = elems[1]
+
+            a = activation(tf.matmul(x, self.W_c)
                            + tf.matmul(state[0], self.W_recurrent_c)
                            + self.b_c)
-            i = recurrent_activation(tf.matmul(elems, self.W_i)
+            i = recurrent_activation(tf.matmul(x, self.W_i)
                                      + tf.matmul(state[0], self.W_recurrent_i)
                                      + self.b_i)
-            f = recurrent_activation(tf.matmul(elems, self.W_f)
+            f = recurrent_activation(tf.matmul(x, self.W_f)
                                      + tf.matmul(state[0], self.W_recurrent_f)
                                      + self.b_f)
-            o = recurrent_activation(tf.matmul(elems, self.W_o)
+            o = recurrent_activation(tf.matmul(x, self.W_o)
                                      + tf.matmul(state[0], self.W_recurrent_o)
                                      + self.b_o)
 
             cell = i * a + f * state[1]
-            state = o * activation(cell)
+            h = o * activation(cell)
 
-            return [state, cell]
+            if not self._use_mask:
+                return [h, cell]
+            else:
+                mask = mask[:, np.newaxis]
+                cell = mask * cell + (1 - mask) * state[1]
+                h = mask * h + (1 - mask) * state[0]
+                return [h, cell]
 
         initial_state = self._initial_state
         cell_state = self._cell_state
@@ -127,9 +140,18 @@ class LSTM(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        states, cell = tf.scan(fn=_recurrent,
-                               elems=tf.transpose(x, perm=[1, 0, 2]),
-                               initializer=[initial_state, cell_state])
+        mask = kwargs['mask']
+        if mask is None:
+            states, cell = tf.scan(fn=_recurrent,
+                                   elems=tf.transpose(x, perm=[1, 0, 2]),
+                                   initializer=[initial_state, cell_state])
+        else:
+            self._use_mask = True
+            mask = tf.transpose(mask)
+            states, cell = tf.scan(fn=_recurrent,
+                                   elems=[tf.transpose(x,
+                                                       perm=[1, 0, 2]), mask],
+                                   initializer=[initial_state, cell_state])
         self._cell_state = cell
 
         if self._return_sequence is True:

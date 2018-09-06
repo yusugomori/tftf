@@ -7,6 +7,7 @@ from .BatchNormalization import BatchNormalization
 from .Conv2D import Conv2D
 from .Dense import Dense
 from .Dropout import Dropout
+from .Embedding import Embedding
 from .Flatten import Flatten
 from .GlobalAveragePooling2D import GlobalAveragePooling2D
 from .Layer import Layer
