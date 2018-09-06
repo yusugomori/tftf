@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from tensorflow.keras.datasets.mnist import load_data
+import tensorflow as tf
 from .Dataset import Dataset
 
 
@@ -13,7 +13,7 @@ def load_mnist(one_hot=True,
                flatten=False,
                include_channel=True):
 
-    train, valid = load_data()
+    train, valid = tf.keras.datasets.mnist.load_data()
     train = list(train)
     valid = list(valid)
 
