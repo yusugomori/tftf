@@ -24,6 +24,7 @@ class RNN(Layer):
         self._length_of_sequences = length_of_sequences
         self._return_sequence = return_sequence
         self._initial_state = initial_state
+        self._use_mask = False
 
     @property
     def input_shape(self):
@@ -48,12 +49,15 @@ class RNN(Layer):
 
     def forward(self, x, **kwargs):
         def _recurrent(state, elems):
-            x = elems[0]
-            mask = elems[1]
+            if not self._use_mask:
+                x = elems
+            else:
+                x = elems[0]
+                mask = elems[1]
             h = self.recurrent_activation(tf.matmul(x, self.W)
                                           + tf.matmul(state, self.W_recurrent)
                                           + self.b)
-            if mask is None:
+            if not self._use_mask:
                 return h
             else:
                 mask = mask[:, np.newaxis]
@@ -66,12 +70,16 @@ class RNN(Layer):
                           tf.zeros((self.input_dim, self.output_dim)))
 
         mask = kwargs['mask']
-        if mask is not None:
+        if mask is None:
+            states = tf.scan(fn=_recurrent,
+                             elems=tf.transpose(x, perm=[1, 0, 2]),
+                             initializer=initial_state)
+        else:
+            self._use_mask = True
             mask = tf.transpose(mask)
-
-        states = tf.scan(fn=_recurrent,
-                         elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
-                         initializer=initial_state)
+            states = tf.scan(fn=_recurrent,
+                             elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
+                             initializer=initial_state)
 
         if self._return_sequence is True:
             return tf.transpose(states, perm=[1, 0, 2])

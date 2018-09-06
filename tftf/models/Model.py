@@ -71,6 +71,7 @@ class Model(object):
             mask = tf.cast(tf.not_equal(x, pad_value), tf.float32)
         else:
             mask = None
+
         training = self.training = \
             tf.placeholder_with_default(False, ())
 

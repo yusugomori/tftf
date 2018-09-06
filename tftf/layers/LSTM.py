@@ -30,6 +30,7 @@ class LSTM(Layer):
         self._return_sequence = return_sequence
         self._initial_state = initial_state
         self._cell_state = cell_state
+        self._use_mask = False
 
     @property
     def cell_state(self):
@@ -96,8 +97,11 @@ class LSTM(Layer):
         recurrent_activation = self.recurrent_activation
 
         def _recurrent(state, elems):
-            x = elems[0]
-            mask = elems[1]
+            if not self._use_mask:
+                x = elems
+            else:
+                x = elems[0]
+                mask = elems[1]
 
             a = activation(tf.matmul(x, self.W_c)
                            + tf.matmul(state[0], self.W_recurrent_c)
@@ -114,7 +118,8 @@ class LSTM(Layer):
 
             cell = i * a + f * state[1]
             h = o * activation(cell)
-            if mask is None:
+
+            if not self._use_mask:
                 return [h, cell]
             else:
                 mask = mask[:, np.newaxis]
@@ -130,18 +135,23 @@ class LSTM(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        mask = kwargs['mask']
-        if mask is not None:
-            mask = tf.transpose(mask)
-
         if cell_state is None:
             cell_state = \
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        states, cell = tf.scan(fn=_recurrent,
-                               elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
-                               initializer=[initial_state, cell_state])
+        mask = kwargs['mask']
+        if mask is None:
+            states, cell = tf.scan(fn=_recurrent,
+                                   elems=tf.transpose(x, perm=[1, 0, 2]),
+                                   initializer=[initial_state, cell_state])
+        else:
+            self._use_mask = True
+            mask = tf.transpose(mask)
+            states, cell = tf.scan(fn=_recurrent,
+                                   elems=[tf.transpose(x,
+                                                       perm=[1, 0, 2]), mask],
+                                   initializer=[initial_state, cell_state])
         self._cell_state = cell
 
         if self._return_sequence is True:
