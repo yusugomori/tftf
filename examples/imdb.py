@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from tftf.datasets import load_imdb
 from tftf.layers \
     import Dense, Activation, RNN, LSTM, Embedding
 from tftf.preprocessing.sequence import Pad
@@ -16,17 +17,16 @@ if __name__ == '__main__':
     Load data
     '''
     num_words = 10000
-    (train_X, train_y), (test_X, test_y) = \
-        tf.keras.datasets.imdb.load_data(num_words=num_words)
+    imdb = load_imdb(num_words=num_words,
+                     train_test_split=False)
+    X = imdb.data
+    y = imdb.target
+    train_X, test_X, train_y, test_y = train_test_split(X, y)
+    train_X, valid_X, train_y, valid_y = train_test_split(train_X, train_y)
 
-    train_X, valid_X, train_y, valid_y = \
-        train_test_split(train_X, train_y)
-
-    train_X, train_y = sort(train_X, train_y, order='descend')
-    train_X = np.array(train_X)
-    train_y = np.array(train_y)[:, np.newaxis]
-    valid_X = np.array(valid_X)
-    valid_y = np.array(valid_y)[:, np.newaxis]
+    train_X, train_y = sort(train_X, train_y)
+    valid_X, valid_y = sort(valid_X, valid_y)
+    test_X, test_y = sort(test_X, test_y)
 
     '''
     Build model
@@ -41,11 +41,16 @@ if __name__ == '__main__':
                   pad_value=0)
     model.describe()
 
-    '''
-    Train model
-    '''
     model.fit(train_X, train_y,
               epochs=30,
+              shuffle=False,
               metrics=['accuracy', 'f1'],
               preprocesses=[Pad(value=0)],
               validation_data=(valid_X, valid_y))
+
+    '''
+    Test model
+    '''
+    test_X, test_y = test_X[:2000], test_y[:2000]
+    test_X = pad_sequences(test_X)
+    print(model.accuracy(test_X, test_y))
