@@ -41,12 +41,12 @@ if __name__ == '__main__':
                   pad_value=0)
     model.describe()
 
-    model.fit(train_X, train_y,
+    model.fit(train_X[:10000], train_y[:10000],
               epochs=30,
               shuffle=False,
               metrics=['accuracy', 'f1'],
               preprocesses=[Pad(value=0)],
-              validation_data=(valid_X, valid_y))
+              validation_data=(valid_X[:5000], valid_y[:5000]))
 
     '''
     Test model
