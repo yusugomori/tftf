@@ -26,14 +26,16 @@ class Layer(object):
                 self.input_dim = input_shape[-1]
             else:  # image data
                 self.input_dim = tuple(input_shape[1:])
-        self.compile()
-        x = self.forward(x)
 
-        output_shape = x.get_shape().as_list()
-        if len(output_shape) == 2:
-            self.output_dim = output_shape[1]
-        else:
-            self.output_dim = tuple(output_shape[1:])
+        self.compile()
+        x = self.forward(x, **kwargs)
+
+        if self.output_dim is None:
+            output_shape = x.get_shape().as_list()
+            if len(output_shape) == 2:
+                self.output_dim = output_shape[1]
+            else:
+                self.output_dim = tuple(output_shape[1:])
 
         return x
 

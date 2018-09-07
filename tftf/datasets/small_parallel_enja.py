@@ -48,11 +48,11 @@ def load_small_parallel_enja(path=None,
     (train_en, test_en), num_words_en = _build(f_train_en, f_test_en)
 
     if to_ja:
-        train_X, test_X, num_X = train_en, test_en, num_words_ja
-        train_y, test_y, num_y = train_ja, test_ja, num_words_en
+        train_X, test_X, num_X = train_en, test_en, num_words_en
+        train_y, test_y, num_y = train_ja, test_ja, num_words_ja
     else:
-        train_X, test_X, num_X = train_ja, test_ja, num_words_en
-        train_y, test_y, num_y = train_en, test_en, num_words_ja
+        train_X, test_X, num_X = train_ja, test_ja, num_words_ja
+        train_y, test_y, num_y = train_en, test_en, num_words_en
 
     train_X, test_X = np.array(train_X), np.array(test_X)
     train_y, test_y = np.array(train_y), np.array(test_y)
