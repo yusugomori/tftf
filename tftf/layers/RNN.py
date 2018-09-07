@@ -69,7 +69,7 @@ class RNN(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        mask = kwargs['mask']
+        mask = kwargs['mask'] if 'mask' in kwargs else None
         if mask is None:
             states = tf.scan(fn=_recurrent,
                              elems=tf.transpose(x, perm=[1, 0, 2]),

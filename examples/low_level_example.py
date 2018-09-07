@@ -5,7 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tftf.layers import Dense, Activation, NALU
 from tftf import regularizers as reg
-# from tftf.initializers import glorot_normal
 from tftf import initializers as ini
 from tftf import activations as act
 from tftf import losses as loss

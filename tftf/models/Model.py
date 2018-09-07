@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from sklearn.utils import shuffle
+from sklearn.utils import shuffle as shuffle_data
 from ..layers import Dense
 from .callbacks import EarlyStopping
 from .losses import *
@@ -143,7 +143,7 @@ class Model(object):
             results = [['loss', 0.]]
 
             if shuffle:
-                indices = shuffle(np.arange(n_data))
+                indices = shuffle_data(np.arange(n_data))
                 _data = data[indices]
                 _target = target[indices]
             else:

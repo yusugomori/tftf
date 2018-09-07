@@ -6,7 +6,6 @@ from tftf.layers \
     import Dense, Activation, RNN, LSTM, Embedding
 from tftf.preprocessing.sequence import Pad
 from tftf.models import Model
-from tftf.layers.modules import ResNet
 from tftf.preprocessing.sequence import pad_sequences, sort
 
 if __name__ == '__main__':
