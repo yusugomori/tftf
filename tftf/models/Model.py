@@ -137,6 +137,8 @@ class Model(object):
             es = EarlyStopping(patience=early_stopping, verbose=verbose)
 
         n_data = len(data)
+        if n_data < batch_size:
+            batch_size = n_data
         n_batches = n_data // batch_size
 
         for epoch in range(epochs):

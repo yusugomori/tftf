@@ -16,3 +16,4 @@ from .MaxPooling2D import MaxPooling2D
 from .NAC import NAC
 from .NALU import NALU
 from .RNN import RNN
+from .TimeDistributedDense import TimeDistributedDense

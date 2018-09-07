@@ -5,8 +5,8 @@ from tftf.datasets import load_imdb
 from tftf.layers \
     import Dense, Activation, RNN, LSTM, Embedding
 from tftf.preprocessing.sequence import Pad
-from tftf.models import Model
 from tftf.preprocessing.sequence import pad_sequences, sort
+from tftf.models import Model
 
 if __name__ == '__main__':
     np.random.seed(0)
