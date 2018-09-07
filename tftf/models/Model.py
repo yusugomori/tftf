@@ -123,6 +123,7 @@ class Model(object):
             validation_data=None,
             metrics=[],
             preprocesses=[],
+            shuffle=True,
             early_stopping=-1,
             verbose=1):
 
@@ -140,9 +141,14 @@ class Model(object):
 
         for epoch in range(epochs):
             results = [['loss', 0.]]
-            indices = shuffle(np.arange(n_data))
-            _data = data[indices]
-            _target = target[indices]
+
+            if shuffle:
+                indices = shuffle(np.arange(n_data))
+                _data = data[indices]
+                _target = target[indices]
+            else:
+                _data = data
+                _target = target
 
             for i in range(n_batches):
                 _start = i * batch_size
