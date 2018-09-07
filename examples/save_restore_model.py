@@ -1,13 +1,15 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
 from tftf.datasets import load_mnist
 from tftf.layers import Layer, Dense, Activation, Dropout
 from tftf.models import Model
 
 
 if __name__ == '__main__':
+    np.random.seed(0)
+    tf.set_random_seed(0)
+
     '''
     Load data
     '''

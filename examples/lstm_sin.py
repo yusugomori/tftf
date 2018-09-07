@@ -3,13 +3,13 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
 from tftf.layers import Layer, Dense, Activation, LSTM
 from tftf.models import Model
 
 
 if __name__ == '__main__':
     np.random.seed(1234)
+    tf.set_random_seed(0)
 
     '''
     Load data

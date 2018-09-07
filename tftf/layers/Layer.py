@@ -18,11 +18,14 @@ class Layer(object):
                                             self.output_dim)
 
     def __call__(self, x, **kwargs):
-        input_shape = x.get_shape().as_list()
-        if len(input_shape) == 2:
-            self.input_dim = input_shape[1]
-        else:
-            self.input_dim = tuple(input_shape[1:])
+        if self.input_dim is None:
+            input_shape = x.get_shape().as_list()
+            if len(input_shape) == 2:  # genral data
+                self.input_dim = input_shape[1]
+            elif len(input_shape) == 3:  # sequencial data
+                self.input_dim = input_shape[-1]
+            else:  # image data
+                self.input_dim = tuple(input_shape[1:])
         self.compile()
         x = self.forward(x)
 
