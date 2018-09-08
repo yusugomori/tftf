@@ -11,6 +11,7 @@ class Layer(object):
         self._output_dtype = tf.float32
         self._params = []
         self._reg_loss = []
+        self._compiled = False
 
     def __repr__(self):
         return '<{}: shape({}, {})>'.format(self.name,
@@ -27,7 +28,9 @@ class Layer(object):
             else:  # image data
                 self.input_dim = tuple(input_shape[1:])
 
-        self.compile()
+        # OPTIMIZE
+        if len(self.params) == 0:
+            self.compile()
         x = self.forward(x, **kwargs)
 
         if self.output_dim is None:

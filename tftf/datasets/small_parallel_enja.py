@@ -44,20 +44,27 @@ def load_small_parallel_enja(path=None,
     f_train_en = os.path.join(dir_path, f_en[0])
     f_test_en = os.path.join(dir_path, f_en[1])
 
-    (train_ja, test_ja), num_words_ja = _build(f_train_ja, f_test_ja)
-    (train_en, test_en), num_words_en = _build(f_train_en, f_test_en)
+    (train_ja, test_ja), num_words_ja, (w2i_ja, i2w_ja) = \
+        _build(f_train_ja, f_test_ja)
+    (train_en, test_en), num_words_en, (w2i_en, i2w_en) = \
+        _build(f_train_en, f_test_en)
 
     if to_ja:
-        train_X, test_X, num_X = train_en, test_en, num_words_en
-        train_y, test_y, num_y = train_ja, test_ja, num_words_ja
+        train_X, test_X, num_X, w2i_X, i2w_X = \
+            train_en, test_en, num_words_en, w2i_en, i2w_en
+        train_y, test_y, num_y, w2i_y, i2w_y = \
+            train_ja, test_ja, num_words_ja, w2i_ja, i2w_ja
     else:
-        train_X, test_X, num_X = train_ja, test_ja, num_words_ja
-        train_y, test_y, num_y = train_en, test_en, num_words_en
+        train_X, test_X, num_X, w2i_X, i2w_X = \
+            train_ja, test_ja, num_words_ja, w2i_ja, i2w_ja
+        train_y, test_y, num_y, w2i_y, i2w_y = \
+            train_en, test_en, num_words_en, w2i_en, i2w_en
 
     train_X, test_X = np.array(train_X), np.array(test_X)
     train_y, test_y = np.array(train_y), np.array(test_y)
 
-    return (train_X, train_y), (test_X, test_y), (num_X, num_y)
+    return (train_X, train_y), (test_X, test_y), \
+        (num_X, num_y), (w2i_X, w2i_y), (i2w_X, i2w_y)
 
 
 def _build(f_train, f_test,
@@ -78,7 +85,7 @@ def _build(f_train, f_test,
     train = builder.transform(f_train)
     test = builder.transform(f_test)
 
-    return (train, test), builder.num_words
+    return (train, test), builder.num_words, (builder.w2i, builder.i2w)
 
 
 class _Builder(object):
@@ -103,6 +110,20 @@ class _Builder(object):
     @property
     def num_words(self):
         return max(self._w2i.values()) + 1
+
+    @property
+    def w2i(self):
+        '''
+        Dict of word to index
+        '''
+        return self._w2i
+
+    @property
+    def i2w(self):
+        '''
+        Dict of index to word
+        '''
+        return self._i2w
 
     def fit(self, f_path):
         self._vocab = set()

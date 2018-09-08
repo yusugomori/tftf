@@ -13,6 +13,7 @@ class LSTM(Layer):
                  recurrent_activation='sigmoid',
                  length_of_sequences=None,
                  return_sequence=False,
+                 return_cell=False,
                  initial_state=None,
                  cell_state=None,
                  rng=None):
@@ -28,16 +29,10 @@ class LSTM(Layer):
             self.activation_initializer(recurrent_activation)
         self._length_of_sequences = length_of_sequences
         self._return_sequence = return_sequence
+        self._return_cell = return_cell
         self._initial_state = initial_state
         self._cell_state = cell_state
         self._use_mask = False
-
-    @property
-    def cell_state(self):
-        if self._return_sequence is True:
-            return tf.transpose(self._cell_state, perm=[1, 0, 2])
-        else:
-            return self._cell_state[-1]
 
     @property
     def input_shape(self):
@@ -93,9 +88,14 @@ class LSTM(Layer):
                        self.b_c, self.b_i, self.b_f, self.b_o]
 
     def forward(self, x, **kwargs):
-        activation = self.activation
-        recurrent_activation = self.recurrent_activation
-
+        '''
+        # Arguments
+            mask: Tensor. Mask for padded value.
+            recurrent: boolean (default True).
+                       Whether to loop the input sequence.
+            initial_state: (default None). Override self._initial_state.
+            cell_state: (default None). Override self._cell_state.
+        '''
         def _recurrent(state, elems):
             if not self._use_mask:
                 x = elems
@@ -127,8 +127,24 @@ class LSTM(Layer):
                 h = mask * h + (1 - mask) * state[0]
                 return [h, cell]
 
-        initial_state = self._initial_state
-        cell_state = self._cell_state
+        activation = self.activation
+        recurrent_activation = self.recurrent_activation
+
+        mask = kwargs['mask'] if 'mask' in kwargs else None
+        if mask is not None:
+            self._use_mask = True
+
+        recurr = kwargs['recurrent'] if 'recurrent' in kwargs else True
+
+        if 'initial_state' in kwargs:
+            initial_state = kwargs['initial_state']
+        else:
+            initial_state = self._initial_state
+
+        if 'cell_state' in kwargs:
+            cell_state = kwargs['cell_state']
+        else:
+            cell_state = self._cell_state
 
         if initial_state is None:
             initial_state = \
@@ -140,21 +156,38 @@ class LSTM(Layer):
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        mask = kwargs['mask'] if 'mask' in kwargs else None
-        if mask is None:
-            states, cell = tf.scan(fn=_recurrent,
-                                   elems=tf.transpose(x, perm=[1, 0, 2]),
-                                   initializer=[initial_state, cell_state])
+        if not recurr:
+            if mask is None:
+                states, cell = _recurrent([initial_state, cell_state], x)
+            else:
+                states, cell = _recurrent([initial_state, cell_state],
+                                          [x, mask])
+            if self._return_cell:
+                return (states, cell)
+            else:
+                return states
         else:
-            self._use_mask = True
-            mask = tf.transpose(mask)
-            states, cell = tf.scan(fn=_recurrent,
-                                   elems=[tf.transpose(x,
-                                                       perm=[1, 0, 2]), mask],
-                                   initializer=[initial_state, cell_state])
-        self._cell_state = cell
+            if mask is None:
+                states, cell = \
+                    tf.scan(fn=_recurrent,
+                            elems=tf.transpose(x, perm=[1, 0, 2]),
+                            initializer=[initial_state, cell_state])
+            else:
+                mask = tf.transpose(mask)
+                states, cell = \
+                    tf.scan(fn=_recurrent,
+                            elems=[tf.transpose(x,
+                                                perm=[1, 0, 2]), mask],
+                            initializer=[initial_state, cell_state])
 
-        if self._return_sequence is True:
-            return tf.transpose(states, perm=[1, 0, 2])
-        else:
-            return states[-1]
+            if self._return_sequence:
+                states = tf.transpose(states, perm=[1, 0, 2])
+                cell = tf.transpose(cell, perm=[1, 0, 2])
+            else:
+                states = states[-1]
+                cell = cell[-1]
+
+            if self._return_cell:
+                return (states, cell)
+            else:
+                return states
