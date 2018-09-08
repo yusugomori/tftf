@@ -13,12 +13,15 @@ and transform words to IDs.
 
 def load_small_parallel_enja(path=None,
                              to_ja=True,
+                             pad_value=0,
                              start_char=1,
                              end_char=2,
                              oov_char=3,
                              index_from=4,
+                             pad='<PAD>',
                              bos='<BOS>',
-                             eos='<EOS>'):
+                             eos='<EOS>',
+                             oov='<UNK>'):
     url_base = 'https://raw.githubusercontent.com/' \
                'odashi/small_parallel_enja/master/'
 
@@ -45,9 +48,13 @@ def load_small_parallel_enja(path=None,
     f_test_en = os.path.join(dir_path, f_en[1])
 
     (train_ja, test_ja), num_words_ja, (w2i_ja, i2w_ja) = \
-        _build(f_train_ja, f_test_ja)
+        _build(f_train_ja, f_test_ja,
+               pad_value, start_char, end_char, oov_char, index_from,
+               pad, bos, eos, oov)
     (train_en, test_en), num_words_en, (w2i_en, i2w_en) = \
-        _build(f_train_en, f_test_en)
+        _build(f_train_en, f_test_en,
+               pad_value, start_char, end_char, oov_char, index_from,
+               pad, bos, eos, oov)
 
     if to_ja:
         train_X, test_X, num_X, w2i_X, i2w_X = \
@@ -68,19 +75,25 @@ def load_small_parallel_enja(path=None,
 
 
 def _build(f_train, f_test,
+           pad_value=0,
            start_char=1,
            end_char=2,
            oov_char=3,
            index_from=4,
+           pad='<PAD>',
            bos='<BOS>',
-           eos='<EOS>'):
+           eos='<EOS>',
+           oov='<UNK>'):
 
-    builder = _Builder(start_char=start_char,
+    builder = _Builder(pad_value=pad_value,
+                       start_char=start_char,
                        end_char=end_char,
                        oov_char=oov_char,
                        index_from=index_from,
+                       pad=pad,
                        bos=bos,
-                       eos=eos)
+                       eos=eos,
+                       oov=oov)
     builder.fit(f_train)
     train = builder.transform(f_train)
     test = builder.transform(f_test)
@@ -90,22 +103,28 @@ def _build(f_train, f_test,
 
 class _Builder(object):
     def __init__(self,
+                 pad_value=0,
                  start_char=1,
                  end_char=2,
                  oov_char=3,
                  index_from=4,
+                 pad='<PAD>',
                  bos='<BOS>',
-                 eos='<EOS>'):
+                 eos='<EOS>',
+                 oov='<UNK>'):
         self._vocab = None
         self._w2i = None
         self._i2w = None
 
+        self.pad_value = pad_value
         self.start_char = start_char
         self.end_char = end_char
         self.oov_char = oov_char
         self.index_from = index_from
+        self.pad = pad
         self.bos = bos
         self.eos = eos
+        self.oov = oov
 
     @property
     def num_words(self):
@@ -134,8 +153,11 @@ class _Builder(object):
 
         self._w2i = {w: (i + self.index_from)
                      for i, w in enumerate(self._vocab)}
+        if self.pad_value >= 0:
+            self._w2i[self.pad] = self.pad_value
         self._w2i[self.bos] = self.start_char
         self._w2i[self.eos] = self.end_char
+        self._w2i[self.oov] = self.oov_char
         self._i2w = {i: w for w, i in self._w2i.items()}
 
     def transform(self, f_path):
