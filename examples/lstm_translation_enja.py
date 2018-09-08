@@ -25,6 +25,13 @@ if __name__ == '__main__':
     valid_X, valid_y = sort(valid_X, valid_y)
     test_X, test_y = sort(test_X, test_y)
 
+    train_size = 10000  # up to 37500
+    valid_size = 500  # up to 12500
+    test_size = 100   # up to 500
+    train_X, train_y = train_X[:train_size], train_y[:train_size]
+    valid_X, valid_y = valid_X[:valid_size], valid_y[:valid_size]
+    test_X, test_y = test_X[:test_size], test_y[:test_size]
+
     '''
     Build model
     '''
@@ -36,8 +43,8 @@ if __name__ == '__main__':
     mask_dec = tf.cast(tf.not_equal(t[:, 1:], pad_value), tf.float32)
 
     encoder = [
-        Embedding(256, input_dim=num_X),
-        LSTM(256, return_sequence=True, return_cell=True)
+        Embedding(128, input_dim=num_X),
+        LSTM(128, return_sequence=True, return_cell=True)
     ]
 
     h = x
@@ -47,8 +54,8 @@ if __name__ == '__main__':
 
     decoder = [
         [
-            Embedding(256, input_dim=num_y),
-            LSTM(256, return_sequence=True, return_cell=True,
+            Embedding(128, input_dim=num_y),
+            LSTM(128, return_sequence=True, return_cell=True,
                  initial_state=encoder_output[:, -1, :],
                  cell_state=encoder_cell[:, -1, :])
         ],
@@ -77,8 +84,8 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    epochs = 1
-    batch_size = 100
+    epochs = 25
+    batch_size = 50
 
     init = tf.global_variables_initializer()
     sess = tf.Session()
@@ -187,15 +194,16 @@ if __name__ == '__main__':
         initial['cell_state']: init_cell_state
     })
 
-    n = 0
-    data = test_X[n][1:-1]
-    target = test_y[n][1:-1]
-    preds = list(preds[n])[1:]
-    preds.append(end_char)
+    for n in range(len(test_X)):
+        data = test_X[n][1:-1]
+        target = test_y[n][1:-1]
+        pred = list(preds[n])[1:]
+        pred.append(end_char)
 
-    print('Original sentence:',
-          ' '.join([i2w_X[i] for i in data]))
-    print('True sentence:',
-          ' '.join([i2w_y[i] for i in target]))
-    print('Generated sentence:',
-          ' '.join([i2w_y[i] for i in preds[:preds.index(end_char)]]))
+        print('-' * 20)
+        print('Original sentence:',
+              ' '.join([i2w_X[i] for i in data]))
+        print('True sentence:',
+              ' '.join([i2w_y[i] for i in target]))
+        print('Generated sentence:',
+              ' '.join([i2w_y[i] for i in pred[:pred.index(end_char)]]))
