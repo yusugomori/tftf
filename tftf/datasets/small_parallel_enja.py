@@ -102,7 +102,7 @@ class _Builder(object):
 
     @property
     def num_words(self):
-        return len(self._w2i)
+        return max(self._w2i.values()) + 1
 
     def fit(self, f_path):
         self._vocab = set()
