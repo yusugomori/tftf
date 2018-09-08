@@ -19,17 +19,12 @@ if __name__ == '__main__':
     (train_X, train_y), (test_X, test_y), (num_X, num_y), \
         (w2i_X, w2i_y), (i2w_X, i2w_y) = load_small_parallel_enja(to_ja=True)
 
-    train_X, valid_X, train_y, valid_y = train_test_split(train_X, train_y)
-
     train_X, train_y = sort(train_X, train_y)
-    valid_X, valid_y = sort(valid_X, valid_y)
     test_X, test_y = sort(test_X, test_y)
 
-    train_size = 10000  # up to 37500
-    valid_size = 500  # up to 12500
-    test_size = 100   # up to 500
+    train_size = 50000  # up to 50000
+    test_size = 500     # up to 500
     train_X, train_y = train_X[:train_size], train_y[:train_size]
-    valid_X, valid_y = valid_X[:valid_size], valid_y[:valid_size]
     test_X, test_y = test_X[:test_size], test_y[:test_size]
 
     '''
@@ -112,12 +107,12 @@ if __name__ == '__main__':
 
         loss /= n_batches
 
-        _valid_X = pad_sequences(valid_X, value=pad_value)
-        _valid_y = pad_sequences(valid_y, value=pad_value)
+        _test_X = pad_sequences(test_X, value=pad_value)
+        _test_y = pad_sequences(test_y, value=pad_value)
 
         val_loss = cost.eval(session=sess, feed_dict={
-            x: _valid_X,
-            t: _valid_y
+            x: _test_X,
+            t: _test_y
         })
 
         print('epoch: {}, '
