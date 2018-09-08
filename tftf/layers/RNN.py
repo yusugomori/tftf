@@ -48,6 +48,13 @@ class RNN(Layer):
         self.params = [self.W, self.W_recurrent, self.b]
 
     def forward(self, x, **kwargs):
+        '''
+        # Arguments
+            mask: Tensor. Mask for padded value.
+            recurrent: boolean (default True).
+                       Whether to loop the input sequence.
+            initial_state: (default None). Override self._initial_state.
+        '''
         def _recurrent(state, elems):
             if not self._use_mask:
                 x = elems
@@ -63,25 +70,41 @@ class RNN(Layer):
                 mask = mask[:, np.newaxis]
                 return mask * h + (1 - mask) * state
 
-        initial_state = self._initial_state
+        mask = kwargs['mask'] if 'mask' in kwargs else None
+        if mask is not None:
+            self._use_mask = True
+
+        recurr = kwargs['recurrent'] if 'recurrent' in kwargs else True
+
+        if 'initial_state' in kwargs:
+            initial_state = kwargs['initial_state']
+        else:
+            initial_state = self._initial_state
+
         if initial_state is None:
             initial_state = \
                 tf.matmul(x[:, 0, :],
                           tf.zeros((self.input_dim, self.output_dim)))
 
-        mask = kwargs['mask'] if 'mask' in kwargs else None
-        if mask is None:
-            states = tf.scan(fn=_recurrent,
-                             elems=tf.transpose(x, perm=[1, 0, 2]),
-                             initializer=initial_state)
-        else:
-            self._use_mask = True
-            mask = tf.transpose(mask)
-            states = tf.scan(fn=_recurrent,
-                             elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
-                             initializer=initial_state)
+        if not recurr:
+            if mask is None:
+                states = _recurrent(initial_state, x)
+            else:
+                states = _recurrent(initial_state, [x, mask])
 
-        if self._return_sequence is True:
-            return tf.transpose(states, perm=[1, 0, 2])
+            return states
         else:
-            return states[-1]
+            if mask is None:
+                states = tf.scan(fn=_recurrent,
+                                 elems=tf.transpose(x, perm=[1, 0, 2]),
+                                 initializer=initial_state)
+            else:
+                mask = tf.transpose(mask)
+                states = tf.scan(fn=_recurrent,
+                                 elems=[tf.transpose(x, perm=[1, 0, 2]), mask],
+                                 initializer=initial_state)
+
+            if self._return_sequence is True:
+                return tf.transpose(states, perm=[1, 0, 2])
+            else:
+                return states[-1]

@@ -16,4 +16,8 @@ class TimeDistributedDense(Dense):
                          rng=rng)
 
     def forward(self, x, **kwargs):
-        return tf.einsum('ijk,kl->ijl', x, self.W) + self.b
+        recurr = kwargs['recurrent'] if 'recurrent' in kwargs else True
+        if not recurr:
+            return tf.matmul(x, self.W) + self.b
+        else:
+            return tf.einsum('ijk,kl->ijl', x, self.W) + self.b
