@@ -88,7 +88,7 @@ class Layer(object):
 
     @params.setter
     def params(self, val):
-        if type(val).__name__ != 'list':
+        if type(val) != list:
             raise AttributeError('type of params must be \'list\', '
                                  'not \'{}\'.'.format(type(val).__name__))
         self._params = val
@@ -99,7 +99,7 @@ class Layer(object):
 
     @reg_loss.setter
     def reg_loss(self, val):
-        if type(val).__name__ != 'list':
+        if type(val) != list:
             raise AttributeError('type of reg_loss must be \'list\', '
                                  'not \'{}\'.'.format(type(val).__name__))
         self._reg_loss = val

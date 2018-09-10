@@ -131,8 +131,7 @@ class LSTM(Layer):
         recurrent_activation = self.recurrent_activation
 
         mask = kwargs['mask'] if 'mask' in kwargs else None
-        if mask is not None:
-            self._use_mask = True
+        self._use_mask = True if mask is not None else False
 
         recurr = kwargs['recurrent'] if 'recurrent' in kwargs else True
 

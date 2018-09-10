@@ -3,6 +3,7 @@ from . import initializers
 from . import regularizers
 
 from .Activation import Activation
+from .Attention import Attention
 from .BatchNormalization import BatchNormalization
 from .Conv2D import Conv2D
 from .Dense import Dense
