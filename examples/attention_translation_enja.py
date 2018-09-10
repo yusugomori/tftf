@@ -196,7 +196,7 @@ if __name__ == '__main__':
 
     preds, _, _, _, _, _ = sess.run(generator, feed_dict={
         decoder[1][0].mask: mask,
-        decoder[1][0]._state: state,
+        decoder[1][0].state: state,
         initial['y']: init_y,
         initial['state']: init_state,
         initial['cell_state']: init_cell_state

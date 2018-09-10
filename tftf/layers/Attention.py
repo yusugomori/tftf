@@ -40,7 +40,7 @@ class Attention(Layer):
         self.initializer = initializer
         self.activation = \
             self.activation_initializer(activation)
-        self._state = state
+        self.state = state
         self._use_mask = False
         self.mask = None
 
@@ -75,7 +75,6 @@ class Attention(Layer):
             mask: Tensor. Mask for padded value.
                   shape of (batch_size, encoder_dim)
             recurrent: boolean (default True).
-            state: (default None). Override self._state.
         '''
         if self.mask is None:
             self.mask = kwargs['mask'] if 'mask' in kwargs else None
@@ -86,12 +85,12 @@ class Attention(Layer):
         if recurr:
             score = tf.einsum('ijk,ilk->ijl',
                               x,
-                              tf.einsum('ijk,kl->ijl', self._state, self.W_a))
+                              tf.einsum('ijk,kl->ijl', self.state, self.W_a))
             if self._use_mask:
                 score *= self.mask[:, np.newaxis, :]
 
             attn = self.attn = tf.nn.softmax(score)
-            c = tf.einsum('ijk,ikl->ijl', attn, self._state)
+            c = tf.einsum('ijk,ikl->ijl', attn, self.state)
 
             return self.activation(tf.einsum('ijk,kl->ijl', c, self.W_c)
                                    + tf.einsum('ijk,kl->ijl', x, self.W_h)
@@ -99,12 +98,12 @@ class Attention(Layer):
         else:
             score = tf.einsum('ij,ikj->ik',
                               x,
-                              tf.einsum('ijk,kl->ijl', self._state, self.W_a))
+                              tf.einsum('ijk,kl->ijl', self.state, self.W_a))
             if self._use_mask:
                 score *= self.mask
 
             attn = self.attn = tf.nn.softmax(score)
-            c = tf.einsum('ij,ijk->ik', attn, self._state)
+            c = tf.einsum('ij,ijk->ik', attn, self.state)
 
             return self.activation(tf.matmul(c, self.W_c)
                                    + tf.matmul(x, self.W_h)
