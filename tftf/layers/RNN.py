@@ -71,8 +71,7 @@ class RNN(Layer):
                 return mask * h + (1 - mask) * state
 
         mask = kwargs['mask'] if 'mask' in kwargs else None
-        if mask is not None:
-            self._use_mask = True
+        self._use_mask = True if mask is not None else False
 
         recurr = kwargs['recurrent'] if 'recurrent' in kwargs else True
 
