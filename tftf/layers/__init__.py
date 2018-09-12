@@ -16,5 +16,6 @@ from .LSTM import LSTM
 from .MaxPooling2D import MaxPooling2D
 from .NAC import NAC
 from .NALU import NALU
+from .PositionalEncoding import PositionalEncoding
 from .RNN import RNN
 from .TimeDistributedDense import TimeDistributedDense
