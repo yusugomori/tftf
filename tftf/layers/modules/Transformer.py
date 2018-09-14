@@ -54,8 +54,8 @@ class Transformer(Module):
         return x
 
     def decode(self, x, mask=None, **kwargs):
-        x = Embedding(self.d_model, self.len_target_vocab)(x) \
-            + PositionalEncoding(self.d_model, self.maxlen)(x)
+        x = Embedding(self.d_model, self.len_target_vocab)(x)
+        x = PositionalEncoding(self.d_model, self.maxlen)(x)
 
         for n in range(self.N):
             x = self._decoder_sublayer(x, mask=mask)
@@ -86,6 +86,8 @@ class Transformer(Module):
                           perm=[0, 2, 1, 3])
              for l, x in zip(linears, (query, key, value))]
 
+        if mask is not None:
+            mask = mask[:, np.newaxis]  # apply to all heads
         x, attn = self._attention(query, key, value, mask=mask)
         x = tf.reshape(tf.transpose(x, perm=[0, 2, 1, 3]),
                        shape=[n_batches, -1, self.h * d_k])
@@ -105,8 +107,8 @@ class Transformer(Module):
         score = tf.matmul(query,
                           tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
         if mask is not None:
-            # TODO: apply mask
-            mask = self._to_attention_mask(mask)
+            mask = self._to_attention_mask(mask)[:, :, np.newaxis]
+            score *= mask
 
         attn = tf.nn.softmax(score)
         c = tf.matmul(attn, value)
