@@ -22,6 +22,7 @@ class Transformer(Module):
                  d_ff=2048,
                  N=6,
                  h=8,
+                 pad_value=0,
                  maxlen=6000):
         self.len_src_vocab = len_src_vocab
         self.len_target_vocab = len_target_vocab
@@ -29,15 +30,35 @@ class Transformer(Module):
         self.d_ff = d_ff
         self.N = N
         self.h = h
+        self.pad_value = pad_value
         self.maxlen = maxlen
 
-    def v1(self, x, **kwargs):
-        x = Embedding(self.d_model, self.len_src_vocab)(x) \
-            + PositionalEncoding(self.d_model, self.maxlen)(x)
-        for n in range(self.N):
-            x = self._encoder_sublayer(x)
+    def v1(self, x, t, **kwargs):
+        target = tf.one_hot(t[:, 1:], depth=self.len_target_vocab,
+                            dtype=tf.float32)
+        mask = \
+            tf.cast(tf.not_equal(x, self.pad_value), tf.float32)
+        encoder_output = self.encode(x, mask=mask, **kwargs)
 
-        encoder_output = x
+        mask = tf.cast(tf.not_equal(t[:, 1:], self.pad_value), tf.float32)
+
+        return encoder_output
+
+    def encode(self, x, mask=None, **kwargs):
+        x = Embedding(self.d_model, self.len_src_vocab)(x)
+        x = PositionalEncoding(self.d_model, self.maxlen)(x)
+
+        for n in range(self.N):
+            x = self._encoder_sublayer(x, mask=mask)
+
+        return x
+
+    def decode(self, x, mask=None, **kwargs):
+        x = Embedding(self.d_model, self.len_target_vocab)(x) \
+            + PositionalEncoding(self.d_model, self.maxlen)(x)
+
+        for n in range(self.N):
+            x = self._decoder_sublayer(x, mask=mask)
 
         return x
 
@@ -50,6 +71,9 @@ class Transformer(Module):
         h = self._feed_forward(x)
         x = LayerNormalization()(h + x)
 
+        return x
+
+    def _decoder_sublayer(self, x, mask=None):
         return x
 
     def _multi_head_attention(self, query, key, value, mask=None):
@@ -80,8 +104,21 @@ class Transformer(Module):
         d_k = self.d_k
         score = tf.matmul(query,
                           tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
-        # TODO: mask
+        if mask is not None:
+            # TODO: apply mask
+            mask = self._to_attention_mask(mask)
+
         attn = tf.nn.softmax(score)
         c = tf.matmul(attn, value)
 
         return c, attn
+
+    def _subsequent_mask(self, x):
+        pass
+
+    def _to_attention_mask(self, mask):
+        return tf.where(condition=tf.equal(mask, 0),
+                        x=tf.ones_like(mask,
+                                       dtype=tf.float32) * np.float32(-1e+9),
+                        y=tf.ones_like(mask,
+                                       dtype=tf.float32))

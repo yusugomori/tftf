@@ -21,8 +21,7 @@ class PositionalEncoding(Layer):
         pass
 
     def forward(self, x, **kwargs):
-        return tf.cast(x, tf.float32) \
-            + self._pe[:, :x.get_shape().as_list()[1]]
+        return x + self._pe[:, :tf.shape(x)[1], :]
 
     def _initialize_pe(self):
         pe = np.zeros(shape=(self.maxlen, self.output_dim), dtype=np.float32)
