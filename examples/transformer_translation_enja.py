@@ -14,6 +14,7 @@ if __name__ == '__main__':
     '''
     Load data
     '''
+    start_char = 1
     end_char = 2
     (train_X, train_y), (test_X, test_y), (num_X, num_y), \
         (w2i_X, w2i_y), (i2w_X, i2w_y) = load_small_parallel_enja(to_ja=True)
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     train_X, train_y = sort(train_X, train_y)
     test_X, test_y = sort(test_X, test_y)
 
-    train_size = 5000   # up to 50000
+    train_size = 50000  # up to 50000
     test_size = 500     # up to 500
     train_X, train_y = train_X[:train_size], train_y[:train_size]
     test_X, test_y = test_X[:test_size], test_y[:test_size]
@@ -43,8 +44,8 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    epochs = 1
-    batch_size = 50
+    epochs = 10
+    batch_size = 100
 
     init = tf.global_variables_initializer()
     sess = tf.Session()
@@ -84,3 +85,28 @@ if __name__ == '__main__':
         print('epoch: {}, '
               'loss: {:.3}, '
               'val_loss: {:.3}'.format(epoch+1, loss, val_loss))
+
+    '''
+    Generate sentences
+    '''
+    preds = transformer.greedy_decode(x, t, maxlen=100)
+    test_X_ = pad_sequences(test_X, value=pad_value)
+    test_y_ = pad_sequences(test_y, value=pad_value)
+
+    preds = sess.run(preds, feed_dict={
+        x: test_X_,
+        t: test_y_
+    })
+
+    for n in range(len(test_X)):
+        data = test_X[n][1:-1]
+        target = test_y[n][1:-1]
+        pred = list(preds[n])
+        pred.append(end_char)
+        print('-' * 20)
+        print('Original sentence:',
+              ' '.join([i2w_X[i] for i in data]))
+        print('True sentence:',
+              ' '.join([i2w_y[i] for i in target]))
+        print('Generated sentence:',
+              ' '.join([i2w_y[i] for i in pred[:pred.index(end_char)]]))
