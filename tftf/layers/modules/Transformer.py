@@ -5,6 +5,8 @@ from .. import Embedding, PositionalEncoding
 from .. import LayerNormalization
 from .. import TimeDistributedDense as Dense
 from .. import Activation, Dropout
+from ...losses import categorical_crossentropy
+from ...optimizers import adam
 
 
 class Transformer(Module):
@@ -23,7 +25,8 @@ class Transformer(Module):
                  N=6,
                  h=8,
                  pad_value=0,
-                 maxlen=6000):
+                 maxlen=6000,
+                 warmup_steps=4000):
         self.len_src_vocab = len_src_vocab
         self.len_target_vocab = len_target_vocab
         self.d_model = d_model
@@ -32,11 +35,12 @@ class Transformer(Module):
         self.h = h
         self.pad_value = pad_value
         self.maxlen = maxlen
+        self.warmup_steps = warmup_steps
 
+    '''
+    Model Architecture
+    '''
     def v1(self, x, t, **kwargs):
-        # target = tf.one_hot(t[:, 1:], depth=self.len_target_vocab,
-        #                     dtype=tf.float32)
-
         mask_src = self._pad_mask(x)
         x = self.encode(x, mask=mask_src, **kwargs)
 
@@ -46,6 +50,10 @@ class Transformer(Module):
 
         x = Dense(self.len_target_vocab)(x)
         x = Activation('softmax')(x)
+
+        self.x = x
+        self.t = tf.one_hot(t, depth=self.len_target_vocab, dtype=tf.float32)
+
         return x
 
     def encode(self, x, mask=None, **kwargs):
@@ -160,3 +168,28 @@ class Transformer(Module):
                                        dtype=tf.float32) * np.float32(-1e+9),
                         y=tf.ones_like(mask,
                                        dtype=tf.float32))
+
+    '''
+    Training
+    '''
+    def loss(self, preds=None, target=None):
+        if preds is None:
+            preds = self.x
+        if target is None:
+            target = self.t
+        return categorical_crossentropy(preds, target)
+
+    def optimizer(self, loss=None):
+        if loss is None:
+            loss = self.loss()
+        lrate = tf.placeholder(tf.float32, shape=(), name='lrate')
+        opt = adam(lr=lrate, beta1=0.9, beta2=0.98, eps=1e-9)
+        return (opt.minimize(loss), lrate)
+
+    def lrate(self, epoch=0):
+        '''
+        Learning rate for Adam in the model
+        '''
+        step = epoch + 1
+        return self.d_model ** (-0.5) * \
+            min(step ** (-0.5), step * self.warmup_steps ** (-1.5))
