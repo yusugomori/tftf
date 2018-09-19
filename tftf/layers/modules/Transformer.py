@@ -25,6 +25,7 @@ class Transformer(Module):
                  h=8,
                  pad_value=0,
                  p_dropout=0.1,
+                 label_smooth=0.1,
                  maxlen=6000,
                  warmup_steps=4000):
         self.len_src_vocab = len_src_vocab
@@ -35,9 +36,12 @@ class Transformer(Module):
         self.h = h
         self.pad_value = pad_value
         self.p_dropout = p_dropout
+        self.label_smooth = label_smooth
         self.maxlen = maxlen
         self.warmup_steps = warmup_steps
         self.is_training = tf.placeholder_with_default(False, ())
+
+        assert label_smooth >= 0.
 
     '''
     Model Architecture
@@ -80,33 +84,37 @@ class Transformer(Module):
         return x
 
     def _encoder_sublayer(self, x, mask=None):
+        p = self.p_dropout
+
         # 1st sub-layer
         h = self._multi_head_attention(query=x, key=x, value=x, mask=mask)
-        h = Dropout(self.p_dropout)(h)
+        h = Dropout(p)(h)
         x = LayerNormalization()(h + x)
 
         # 2nd sub-layer
         h = self._feed_forward(x)
-        h = Dropout(self.p_dropout)(h)
+        h = Dropout(p)(h)
         x = LayerNormalization()(h + x)
 
         return x
 
     def _decoder_sublayer(self, x, memory, mask_src=None, mask_tgt=None):
+        p = self.p_dropout
+
         # 1st sub-layer
         h = self._multi_head_attention(query=x, key=x, value=x, mask=mask_tgt)
-        h = Dropout(self.p_dropout)(h)
+        h = Dropout(p)(h)
         x = LayerNormalization()(h + x)
 
         # 2nd sub-layer
         h = self._multi_head_attention(query=x, key=memory, value=memory,
                                        mask=mask_src)
-        h = Dropout(self.p_dropout)(h)
+        h = Dropout(p)(h)
         x = LayerNormalization()(h + x)
 
         # 3rd sub-layer
         h = self._feed_forward(x)
-        h = Dropout(self.p_dropout)(h)
+        h = Dropout(p)(h)
         x = LayerNormalization()(h + x)
 
         return x
@@ -186,6 +194,10 @@ class Transformer(Module):
             preds = self.x
         if target is None:
             target = self.t
+
+        e = self.label_smooth
+        if e > 0.:
+            target = (1 - e) * target + e / self.len_target_vocab
         return categorical_crossentropy(preds, target)
 
     def optimizer(self, loss=None):
