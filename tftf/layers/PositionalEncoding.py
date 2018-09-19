@@ -5,6 +5,7 @@ from .Layer import Layer
 
 class PositionalEncoding(Layer):
     def __init__(self, output_dim,
+                 with_identity=True,
                  maxlen=6000):
         '''
         Positional encoding layer with sinusoid
@@ -15,13 +16,18 @@ class PositionalEncoding(Layer):
         super().__init__()
         self.output_dim = output_dim
         self.maxlen = maxlen
+        self._with_identity = with_identity
         self._pe = self._initialize_pe()
 
     def compile(self):
         pass
 
     def forward(self, x, **kwargs):
-        return x + self._pe[:, :tf.shape(x)[1], :]
+        pe = self._pe[:, :tf.shape(x)[1], :]
+        if self._with_identity:
+            return x + pe
+        else:
+            return pe
 
     def _initialize_pe(self):
         pe = np.zeros(shape=(self.maxlen, self.output_dim), dtype=np.float32)

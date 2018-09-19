@@ -21,7 +21,7 @@ if __name__ == '__main__':
     train_X, train_y = sort(train_X, train_y)
     test_X, test_y = sort(test_X, test_y)
 
-    train_size = 5000  # up to 50000
+    train_size = 5000   # up to 50000
     test_size = 500     # up to 500
     train_X, train_y = train_X[:train_size], train_y[:train_size]
     test_X, test_y = test_X[:test_size], test_y[:test_size]
@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     cost = transformer.loss()
     optimizer, lr = transformer.optimizer(cost)
+    train = transformer.is_training
 
     '''
     Train model
@@ -65,7 +66,8 @@ if __name__ == '__main__':
             _, _cost = sess.run([optimizer, cost], feed_dict={
                 x: _train_X,
                 t: _train_y,
-                lr: transformer.lrate(epoch)
+                lr: transformer.lrate(epoch),
+                train: True
             })
             loss += _cost
 

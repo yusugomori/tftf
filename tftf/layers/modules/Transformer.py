@@ -16,7 +16,6 @@ class Transformer(Module):
     Ashish Vaswani et al.
     https://arxiv.org/abs/1706.03762
     '''
-    # TODO: consider dropout
     def __init__(self,
                  len_src_vocab,
                  len_target_vocab,
@@ -25,6 +24,7 @@ class Transformer(Module):
                  N=6,
                  h=8,
                  pad_value=0,
+                 p_dropout=0.1,
                  maxlen=6000,
                  warmup_steps=4000):
         self.len_src_vocab = len_src_vocab
@@ -34,8 +34,10 @@ class Transformer(Module):
         self.N = N
         self.h = h
         self.pad_value = pad_value
+        self.p_dropout = p_dropout
         self.maxlen = maxlen
         self.warmup_steps = warmup_steps
+        self.is_training = tf.placeholder_with_default(False, ())
 
     '''
     Model Architecture
@@ -59,6 +61,7 @@ class Transformer(Module):
     def encode(self, x, mask=None, **kwargs):
         x = Embedding(self.d_model, self.len_src_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
+        x = Dropout(self.p_dropout)(x)
 
         for n in range(self.N):
             x = self._encoder_sublayer(x, mask=mask)
@@ -68,6 +71,7 @@ class Transformer(Module):
     def decode(self, x, memory, mask_src=None, mask_tgt=None, **kwargs):
         x = Embedding(self.d_model, self.len_target_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
+        x = Dropout(self.p_dropout)(x)
 
         for n in range(self.N):
             x = self._decoder_sublayer(x, memory,
@@ -78,10 +82,12 @@ class Transformer(Module):
     def _encoder_sublayer(self, x, mask=None):
         # 1st sub-layer
         h = self._multi_head_attention(query=x, key=x, value=x, mask=mask)
+        h = Dropout(self.p_dropout)(h)
         x = LayerNormalization()(h + x)
 
         # 2nd sub-layer
         h = self._feed_forward(x)
+        h = Dropout(self.p_dropout)(h)
         x = LayerNormalization()(h + x)
 
         return x
@@ -89,15 +95,18 @@ class Transformer(Module):
     def _decoder_sublayer(self, x, memory, mask_src=None, mask_tgt=None):
         # 1st sub-layer
         h = self._multi_head_attention(query=x, key=x, value=x, mask=mask_tgt)
+        h = Dropout(self.p_dropout)(h)
         x = LayerNormalization()(h + x)
 
         # 2nd sub-layer
         h = self._multi_head_attention(query=x, key=memory, value=memory,
                                        mask=mask_src)
+        h = Dropout(self.p_dropout)(h)
         x = LayerNormalization()(h + x)
 
         # 3rd sub-layer
         h = self._feed_forward(x)
+        h = Dropout(self.p_dropout)(h)
         x = LayerNormalization()(h + x)
 
         return x
