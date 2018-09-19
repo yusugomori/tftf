@@ -49,9 +49,17 @@ class Transformer(Module):
     '''
     def v1(self, x, t, **kwargs):
         mask_src = self._pad_mask(x)
-        x = self.encoder_output \
-            = self.encode(x, mask=mask_src,
-                          training=self.is_training, **kwargs)
+
+        encoder = Encoder(self.N,
+                          self.h,
+                          self.len_src_vocab,
+                          self.d_model,
+                          self.d_ff,
+                          self.p_dropout,
+                          self.maxlen)
+
+        x = encoder(x, mask=mask_src,
+                    training=self.is_training, **kwargs)
 
         mask_tgt = self._pad_subsequent_mask(t)
         x = self.decoder_output = \
@@ -72,14 +80,15 @@ class Transformer(Module):
         return x
 
     def encode(self, x, mask=None, **kwargs):
-        x = Embedding(self.d_model, self.len_src_vocab)(x, **kwargs)
-        x = PositionalEncoding(self.d_model, self.maxlen)(x, **kwargs)
-        x = Dropout(self.p_dropout)(x, **kwargs)
-
-        for n in range(self.N):
-            x = self._encoder_sublayer(x, mask=mask, **kwargs)
-
-        return x
+        # x = Embedding(self.d_model, self.len_src_vocab)(x, **kwargs)
+        # x = PositionalEncoding(self.d_model, self.maxlen)(x, **kwargs)
+        # x = Dropout(self.p_dropout)(x, **kwargs)
+        #
+        # for n in range(self.N):
+        #     x = self._encoder_sublayer(x, mask=mask, **kwargs)
+        #
+        # return x
+        pass
 
     def decode(self, x, memory, mask_src=None, mask_tgt=None, **kwargs):
         x = Embedding(self.d_model, self.len_target_vocab)(x, **kwargs)
@@ -232,7 +241,7 @@ class Transformer(Module):
     '''
     Generator
     '''
-    def greedy_decode(self, x, t, maxlen=100, **kwargs):
+    def greedy_decode(self, maxlen=100, **kwargs):
         output = []
         for i in range(maxlen-1):
             out = self.decoder_output[:, -1]
@@ -242,3 +251,128 @@ class Transformer(Module):
         output = tf.stack(output, axis=1)
         output = tf.cast(tf.argmax(output, axis=2), tf.int32)
         return output
+
+
+class Encoder(object):
+    def __init__(self, N, h, len_src_vocab, d_model, d_ff, p_dropout, maxlen):
+        self.layers = [
+            Embedding(d_model, len_src_vocab),
+            PositionalEncoding(d_model, maxlen),
+            Dropout(p_dropout)
+        ]
+        self.sub_layers = \
+            [EncoderSubLayer(d_model, d_ff, h, p_dropout) for _ in range(N)]
+
+    def __call__(self, x, mask=None, **kwargs):
+        return self.forward(x, mask, **kwargs)
+
+    def forward(self, x, mask=None, **kwargs):
+        for l in self.layers:
+            x = l(x, **kwargs)
+        for sub_layer in self.sub_layers:
+            x = sub_layer(x, mask=mask, **kwargs)
+
+        return x
+
+
+class EncoderSubLayer(object):
+    def __init__(self, d_model, d_ff, h, p_dropout):
+        self.layers = [
+            [MultiHeadAttention(d_model, h),
+             Dropout(p_dropout),
+             LayerNormalization()],
+            [FFN(d_ff, d_model),
+             Dropout(p_dropout),
+             LayerNormalization()]
+        ]
+
+    def __call__(self, x, mask=None, **kwargs):
+        return self.forward(x, mask, **kwargs)
+
+    def forward(self, x, mask=None, **kwargs):
+        # 1st sub-layer
+        layers = self.layers[0]
+        h = layers[0](query=x, key=x, value=x, mask=mask, **kwargs)
+        h = layers[1](h, **kwargs)
+        x = layers[2](h + x, **kwargs)
+
+        # 2nd sub-layer
+        layers = self.layers[1]
+        h = layers[0](x, **kwargs)
+        h = layers[1](h, **kwargs)
+        x = layers[2](h + x, **kwargs)
+
+        return x
+
+
+class MultiHeadAttention(object):
+    '''
+    Multi-Head Attention
+    '''
+    def __init__(self, d_model, h):
+        self.d_model = d_model
+        self.h = h
+        self.linears = [Dense(d_model, d_model) for _ in range(4)]
+
+    def __call__(self, query, key, value, mask=None, **kwargs):
+        return self.forward(query, key, value, mask, **kwargs)
+
+    def forward(self, query, key, value, mask=None, **kwargs):
+        d_k = d_v = self.d_k = self.d_v = self.d_model // self.h
+        n_batches = tf.shape(query)[0]
+        query, key, value = \
+            [tf.transpose(tf.reshape(l(x),
+                                     shape=[n_batches, -1, self.h, d_k]),
+                          perm=[0, 2, 1, 3])
+             for l, x in zip(self.linears, (query, key, value))]
+
+        if mask is not None:
+            mask = mask[:, np.newaxis]  # apply to all heads
+        x, attn = self._attention(query, key, value, mask=mask, **kwargs)
+        x = tf.reshape(tf.transpose(x, perm=[0, 2, 1, 3]),
+                       shape=[n_batches, -1, self.h * d_k])
+
+        return self.linears[-1](x)
+
+    def _attention(self, query, key, value, mask=None, **kwargs):
+        '''
+        Scaled Dot-Product Attention
+        '''
+        d_k = self.d_k
+        score = tf.matmul(query,
+                          tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
+        if mask is not None:
+            mask = self._to_attention_mask(mask)
+            score *= mask
+
+        attn = tf.nn.softmax(score)
+        c = tf.matmul(attn, value)
+
+        return c, attn
+
+    def _to_attention_mask(self, mask):
+        return tf.where(condition=tf.equal(mask, 0),
+                        x=tf.ones_like(mask,
+                                       dtype=tf.float32) * np.float32(-1e+9),
+                        y=tf.ones_like(mask,
+                                       dtype=tf.float32))
+
+
+class FFN(object):
+    '''
+    Position-wise Feed-Forward Networks
+    '''
+    def __init__(self, d_ff, d_model):
+        self.layers = [
+            Dense(d_ff, d_model),
+            Activation('relu'),
+            Dense(d_model, d_ff)
+        ]
+
+    def __call__(self, x, **kwargs):
+        return self.forward(x, **kwargs)
+
+    def forward(self, x, **kwargs):
+        for l in self.layers:
+            x = l(x, **kwargs)
+        return x

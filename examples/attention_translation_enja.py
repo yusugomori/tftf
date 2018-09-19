@@ -84,7 +84,7 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    epochs = 1
+    epochs = 25
     batch_size = 50
 
     init = tf.global_variables_initializer()

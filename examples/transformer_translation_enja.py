@@ -89,7 +89,7 @@ if __name__ == '__main__':
     '''
     Generate sentences
     '''
-    preds = transformer.greedy_decode(x, t, maxlen=100)
+    preds = transformer.greedy_decode(maxlen=100)
     test_X_ = pad_sequences(test_X, value=pad_value)
     test_y_ = pad_sequences(test_y, value=pad_value)
 
