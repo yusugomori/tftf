@@ -34,31 +34,35 @@ class Transformer(Module):
         self.maxlen = maxlen
 
     def v1(self, x, t, **kwargs):
-        target = tf.one_hot(t[:, 1:], depth=self.len_target_vocab,
-                            dtype=tf.float32)
-        mask = \
-            tf.cast(tf.not_equal(x, self.pad_value), tf.float32)
-        encoder_output = self.encode(x, mask=mask, **kwargs)
+        # target = tf.one_hot(t[:, 1:], depth=self.len_target_vocab,
+        #                     dtype=tf.float32)
 
-        mask = tf.cast(tf.not_equal(t[:, 1:], self.pad_value), tf.float32)
+        mask_src = self._pad_mask(x)
+        x = self.encode(x, mask=mask_src, **kwargs)
 
-        return encoder_output
+        mask_tgt = self._pad_subsequent_mask(t)
+        x = self.decode(t, memory=x,
+                        mask_src=mask_src, mask_tgt=mask_tgt, **kwargs)
+        return x
 
     def encode(self, x, mask=None, **kwargs):
         x = Embedding(self.d_model, self.len_src_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
 
+        print('Encoder:')
         for n in range(self.N):
             x = self._encoder_sublayer(x, mask=mask)
 
         return x
 
-    def decode(self, x, mask=None, **kwargs):
+    def decode(self, x, memory, mask_src=None, mask_tgt=None, **kwargs):
         x = Embedding(self.d_model, self.len_target_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
 
+        print('Decoder:')
         for n in range(self.N):
-            x = self._decoder_sublayer(x, mask=mask)
+            x = self._decoder_sublayer(x, memory,
+                                       mask_src=mask_src, mask_tgt=mask_tgt)
 
         return x
 
@@ -73,7 +77,20 @@ class Transformer(Module):
 
         return x
 
-    def _decoder_sublayer(self, x, mask=None):
+    def _decoder_sublayer(self, x, memory, mask_src=None, mask_tgt=None):
+        # 1st sub-layer
+        h = self._multi_head_attention(query=x, key=x, value=x, mask=mask_tgt)
+        x = LayerNormalization()(h + x)
+
+        # 2nd sub-layer
+        h = self._multi_head_attention(query=x, key=memory, value=memory,
+                                       mask=mask_src)
+        x = LayerNormalization()(h + x)
+
+        # 3rd sub-layer
+        h = self._feed_forward(x)
+        x = LayerNormalization()(h + x)
+
         return x
 
     def _multi_head_attention(self, query, key, value, mask=None):
@@ -107,7 +124,9 @@ class Transformer(Module):
         score = tf.matmul(query,
                           tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
         if mask is not None:
-            mask = self._to_attention_mask(mask)[:, :, np.newaxis]
+            print('score shape:', score.get_shape())
+            mask = self._to_attention_mask(mask)
+            print('mask shape:', mask.get_shape())
             score *= mask
 
         attn = tf.nn.softmax(score)
@@ -115,8 +134,26 @@ class Transformer(Module):
 
         return c, attn
 
+    def _pad_mask(self, x):
+        mask = tf.cast(tf.not_equal(x, self.pad_value), tf.float32)
+        return mask[:, np.newaxis]
+
     def _subsequent_mask(self, x):
-        pass
+        size = tf.shape(x)[-1]
+        shape = (1, size, size)
+        mask = tf.matrix_band_part(tf.ones(shape), -1, 0)
+        return tf.cast(mask, tf.float32)
+
+    def _pad_subsequent_mask(self, x):
+        mask = self._pad_mask(x)
+        mask = \
+            tf.cast(
+                tf.logical_and(tf.cast(mask, tf.bool),
+                               tf.cast(self._subsequent_mask(x),
+                                       tf.bool)),
+                tf.float32
+            )
+        return mask
 
     def _to_attention_mask(self, mask):
         return tf.where(condition=tf.equal(mask, 0),
