@@ -43,13 +43,15 @@ class Transformer(Module):
         mask_tgt = self._pad_subsequent_mask(t)
         x = self.decode(t, memory=x,
                         mask_src=mask_src, mask_tgt=mask_tgt, **kwargs)
+
+        x = Dense(self.len_target_vocab)(x)
+        x = Activation('softmax')(x)
         return x
 
     def encode(self, x, mask=None, **kwargs):
         x = Embedding(self.d_model, self.len_src_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
 
-        print('Encoder:')
         for n in range(self.N):
             x = self._encoder_sublayer(x, mask=mask)
 
@@ -59,7 +61,6 @@ class Transformer(Module):
         x = Embedding(self.d_model, self.len_target_vocab)(x)
         x = PositionalEncoding(self.d_model, self.maxlen)(x)
 
-        print('Decoder:')
         for n in range(self.N):
             x = self._decoder_sublayer(x, memory,
                                        mask_src=mask_src, mask_tgt=mask_tgt)
@@ -124,9 +125,7 @@ class Transformer(Module):
         score = tf.matmul(query,
                           tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
         if mask is not None:
-            print('score shape:', score.get_shape())
             mask = self._to_attention_mask(mask)
-            print('mask shape:', mask.get_shape())
             score *= mask
 
         attn = tf.nn.softmax(score)
