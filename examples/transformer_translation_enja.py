@@ -23,7 +23,7 @@ if __name__ == '__main__':
     test_X, test_y = sort(test_X, test_y)
 
     train_size = 50000  # up to 50000
-    test_size = 500     # up to 500
+    test_size = 100     # up to 500
     train_X, train_y = train_X[:train_size], train_y[:train_size]
     test_X, test_y = test_X[:test_size], test_y[:test_size]
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     x = tf.placeholder(tf.int32, [None, None], name='x')
     t = tf.placeholder(tf.int32, [None, None], name='t')
 
-    transformer = Transformer(num_X, num_y, N=1)
+    transformer = Transformer(num_X, num_y)
     preds = transformer.v1(x, t)
 
     cost = transformer.loss()
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    epochs = 10
+    epochs = 30
     batch_size = 100
 
     init = tf.global_variables_initializer()
@@ -89,20 +89,55 @@ if __name__ == '__main__':
     '''
     Generate sentences
     '''
-    preds = transformer.greedy_decode(maxlen=100)
-    test_X_ = pad_sequences(test_X, value=pad_value)
-    test_y_ = pad_sequences(test_y, value=pad_value)
+    maxlen = 100
+    y = tf.placeholder(tf.int32, [None, None])
+    step = tf.constant(0)
+    flg = tf.cast(tf.zeros_like(y[:, 0]), dtype=tf.bool)
 
-    preds = sess.run(preds, feed_dict={
+    mask_src = transformer._pad_mask(x)
+    memory = transformer.encode(x, mask=mask_src)
+
+    def cond(y, step, f):
+        n_flg = tf.reduce_sum(tf.cast(f, tf.int32))
+        next = \
+            tf.not_equal(n_flg,
+                         tf.reduce_sum(tf.ones_like(flg,
+                                                    dtype=tf.int32)))
+        return tf.logical_and(step+1 < maxlen, next)
+
+    def body(y, step, f):
+        mask_tgt = transformer._pad_subsequent_mask(y)
+        h = transformer.decode(y, memory,
+                               mask_src=mask_src, mask_tgt=mask_tgt,
+                               recurrent=True)
+        output = transformer.generate(h[:, -1], recurrent=False)
+        output = tf.cast(tf.argmax(output, axis=1), tf.int32)
+        y = tf.concat([y, output[:, np.newaxis]], axis=1)
+        f = tf.logical_or(f, tf.equal(output, end_char))
+
+        return [y, step+1, f]
+
+    generator = tf.while_loop(cond,
+                              body,
+                              loop_vars=[y, step, flg],
+                              shape_invariants=[
+                                tf.TensorShape([None, None]),
+                                step.get_shape(),
+                                tf.TensorShape([None])])
+
+    test_X_ = pad_sequences(test_X, value=pad_value)
+    y_ = start_char * np.ones_like(test_X, dtype='int32')[:, np.newaxis]
+    preds, _, _ = sess.run(generator, feed_dict={
         x: test_X_,
-        t: test_y_
+        y: y_
     })
 
     for n in range(len(test_X)):
         data = test_X[n][1:-1]
         target = test_y[n][1:-1]
-        pred = list(preds[n])
+        pred = list(preds[n])[1:]
         pred.append(end_char)
+
         print('-' * 20)
         print('Original sentence:',
               ' '.join([i2w_X[i] for i in data]))

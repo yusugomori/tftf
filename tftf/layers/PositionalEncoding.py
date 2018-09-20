@@ -23,7 +23,7 @@ class PositionalEncoding(Layer):
         pass
 
     def forward(self, x, **kwargs):
-        pe = self._pe[:, :tf.shape(x)[1], :]
+        pe = self._pe[:, :tf.shape(x)[1]]
         if self._with_identity:
             return x + pe
         else:
