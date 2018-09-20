@@ -49,30 +49,33 @@ class Transformer(Module):
     '''
     def v1(self, x, t, **kwargs):
         mask_src = self._pad_mask(x)
+        encoder = self.encoder = \
+            Encoder(len_src_vocab=self.len_src_vocab,
+                    N=self.N,
+                    d_model=self.d_model,
+                    d_ff=self.d_ff,
+                    h=self.h,
+                    p_dropout=self.p_dropout,
+                    maxlen=self.maxlen)
 
-        encoder = Encoder(self.N,
-                          self.h,
-                          self.len_src_vocab,
-                          self.d_model,
-                          self.d_ff,
-                          self.p_dropout,
-                          self.maxlen)
-
-        x = encoder(x, mask=mask_src,
-                    training=self.is_training, **kwargs)
+        x = self.encode(x, mask=mask_src)
 
         mask_tgt = self._pad_subsequent_mask(t)
-        x = self.decoder_output = \
-            self.decode(t, memory=x,
-                        mask_src=mask_src, mask_tgt=mask_tgt,
-                        training=self.is_training, **kwargs)
+        decoder = self.decoder = \
+            Decoder(len_target_vocab=self.len_target_vocab,
+                    N=self.N,
+                    d_model=self.d_model,
+                    d_ff=self.d_ff,
+                    h=self.h,
+                    p_dropout=self.p_dropout,
+                    maxlen=self.maxlen)
 
-        self.generator = [
-            Dense(self.len_target_vocab),
-            Activation('softmax')
-        ]
-        for layer in self.generator:
-            x = layer(x, training=self.is_training, **kwargs)
+        x = self.decode(t, memory=x,
+                        mask_src=mask_src, mask_tgt=mask_tgt, **kwargs)
+
+        generator = self.generator = \
+            Generator(len_target_vocab=self.len_target_vocab)
+        x = self.generate(x, **kwargs)
 
         self.x = x
         self.t = tf.one_hot(t, depth=self.len_target_vocab, dtype=tf.float32)
@@ -80,106 +83,16 @@ class Transformer(Module):
         return x
 
     def encode(self, x, mask=None, **kwargs):
-        # x = Embedding(self.d_model, self.len_src_vocab)(x, **kwargs)
-        # x = PositionalEncoding(self.d_model, self.maxlen)(x, **kwargs)
-        # x = Dropout(self.p_dropout)(x, **kwargs)
-        #
-        # for n in range(self.N):
-        #     x = self._encoder_sublayer(x, mask=mask, **kwargs)
-        #
-        # return x
-        pass
+        return self.encoder(x, mask=mask,
+                            training=self.is_training, **kwargs)
 
     def decode(self, x, memory, mask_src=None, mask_tgt=None, **kwargs):
-        x = Embedding(self.d_model, self.len_target_vocab)(x, **kwargs)
-        x = PositionalEncoding(self.d_model, self.maxlen)(x, **kwargs)
-        x = Dropout(self.p_dropout)(x, **kwargs)
+        return self.decoder(x, memory=memory,
+                            mask_src=mask_src, mask_tgt=mask_tgt,
+                            training=self.is_training, **kwargs)
 
-        for n in range(self.N):
-            x = self._decoder_sublayer(x, memory,
-                                       mask_src=mask_src,
-                                       mask_tgt=mask_tgt,
-                                       **kwargs)
-
-        return x
-
-    def _encoder_sublayer(self, x, mask=None, **kwargs):
-        p = self.p_dropout
-
-        # 1st sub-layer
-        h = self._multi_head_attention(query=x, key=x, value=x,
-                                       mask=mask, **kwargs)
-        h = Dropout(p)(h, **kwargs)
-        x = LayerNormalization()(h + x, **kwargs)
-
-        # 2nd sub-layer
-        h = self._feed_forward(x, **kwargs)
-        h = Dropout(p)(h, **kwargs)
-        x = LayerNormalization()(h + x, **kwargs)
-
-        return x
-
-    def _decoder_sublayer(self, x, memory,
-                          mask_src=None, mask_tgt=None, **kwargs):
-        p = self.p_dropout
-
-        # 1st sub-layer
-        h = self._multi_head_attention(query=x, key=x, value=x,
-                                       mask=mask_tgt, **kwargs)
-        h = Dropout(p)(h, **kwargs)
-        x = LayerNormalization()(h + x, **kwargs)
-
-        # 2nd sub-layer
-        h = self._multi_head_attention(query=x, key=memory, value=memory,
-                                       mask=mask_src, **kwargs)
-        h = Dropout(p)(h, **kwargs)
-        x = LayerNormalization()(h + x, **kwargs)
-
-        # 3rd sub-layer
-        h = self._feed_forward(x, **kwargs)
-        h = Dropout(p)(h, **kwargs)
-        x = LayerNormalization()(h + x, **kwargs)
-
-        return x
-
-    def _multi_head_attention(self, query, key, value, mask=None, **kwargs):
-        d_k = d_v = self.d_k = self.d_v = self.d_model // self.h
-        linears = [Dense(self.d_model, self.d_model) for _ in range(4)]
-        n_batches = tf.shape(query)[0]
-        query, key, value = \
-            [tf.transpose(tf.reshape(l(x),
-                                     shape=[n_batches, -1, self.h, d_k]),
-                          perm=[0, 2, 1, 3])
-             for l, x in zip(linears, (query, key, value))]
-
-        if mask is not None:
-            mask = mask[:, np.newaxis]  # apply to all heads
-        x, attn = self._attention(query, key, value, mask=mask, **kwargs)
-        x = tf.reshape(tf.transpose(x, perm=[0, 2, 1, 3]),
-                       shape=[n_batches, -1, self.h * d_k])
-
-        return linears[-1](x)
-
-    def _feed_forward(self, x, **kwargs):
-        x = Dense(self.d_ff, self.d_model)(x, **kwargs)
-        x = Activation('relu')(x, **kwargs)
-        return Dense(self.d_model, self.d_ff)(x, **kwargs)
-
-    def _attention(self, query, key, value, mask=None, **kwargs):
-        '''
-        Scaled Dot-Product Attention
-        '''
-        d_k = self.d_k
-        score = tf.matmul(query,
-                          tf.transpose(key, perm=[0, 1, 3, 2])) / np.sqrt(d_k)
-        if mask is not None:
-            mask = self._to_attention_mask(mask)
-            score *= mask
-
-        attn = tf.nn.softmax(score)
-        c = tf.matmul(attn, value)
-
-        return c, attn
+    def generate(self, x, **kwargs):
+        return self.generator(x, training=self.is_training, **kwargs)
 
     def _pad_mask(self, x):
         mask = tf.cast(tf.not_equal(x, self.pad_value), tf.float32)
@@ -201,13 +114,6 @@ class Transformer(Module):
                 tf.float32
             )
         return mask
-
-    def _to_attention_mask(self, mask):
-        return tf.where(condition=tf.equal(mask, 0),
-                        x=tf.ones_like(mask,
-                                       dtype=tf.float32) * np.float32(-1e+9),
-                        y=tf.ones_like(mask,
-                                       dtype=tf.float32))
 
     '''
     Training
@@ -238,23 +144,16 @@ class Transformer(Module):
         return self.d_model ** (-0.5) * \
             min(step ** (-0.5), step * self.warmup_steps ** (-1.5))
 
-    '''
-    Generator
-    '''
-    def greedy_decode(self, maxlen=100, **kwargs):
-        output = []
-        for i in range(maxlen-1):
-            out = self.decoder_output[:, -1]
-            for layer in self.generator:
-                out = layer(out, recurrent=False)
-            output.append(out)
-        output = tf.stack(output, axis=1)
-        output = tf.cast(tf.argmax(output, axis=2), tf.int32)
-        return output
-
 
 class Encoder(object):
-    def __init__(self, N, h, len_src_vocab, d_model, d_ff, p_dropout, maxlen):
+    def __init__(self,
+                 len_src_vocab,
+                 N=6,
+                 d_model=512,
+                 d_ff=2048,
+                 h=8,
+                 p_dropout=0.1,
+                 maxlen=6000):
         self.layers = [
             Embedding(d_model, len_src_vocab),
             PositionalEncoding(d_model, maxlen),
@@ -276,12 +175,16 @@ class Encoder(object):
 
 
 class EncoderSubLayer(object):
-    def __init__(self, d_model, d_ff, h, p_dropout):
+    def __init__(self,
+                 d_model,
+                 d_ff,
+                 h,
+                 p_dropout):
         self.layers = [
             [MultiHeadAttention(d_model, h),
              Dropout(p_dropout),
              LayerNormalization()],
-            [FFN(d_ff, d_model),
+            [FFN(d_model, d_ff),
              Dropout(p_dropout),
              LayerNormalization()]
         ]
@@ -305,9 +208,104 @@ class EncoderSubLayer(object):
         return x
 
 
+class Decoder(object):
+    def __init__(self,
+                 len_target_vocab,
+                 N=6,
+                 d_model=512,
+                 d_ff=2048,
+                 h=8,
+                 p_dropout=0.1,
+                 maxlen=6000):
+        self.layers = [
+            Embedding(d_model, len_target_vocab),
+            PositionalEncoding(d_model, maxlen),
+            Dropout(p_dropout)
+        ]
+        self.sub_layers = \
+            [DecoderSubLayer(d_model, d_ff, h, p_dropout) for _ in range(N)]
+
+    def __call__(self, x, memory,
+                 mask_src=None, mask_tgt=None, **kwargs):
+        return self.forward(x, memory, mask_src, mask_tgt, **kwargs)
+
+    def forward(self, x, memory,
+                mask_src=None, mask_tgt=None, **kwargs):
+        for l in self.layers:
+            x = l(x, **kwargs)
+        for sub_layer in self.sub_layers:
+            x = sub_layer(x, memory,
+                          mask_src=mask_src, mask_tgt=mask_tgt, **kwargs)
+
+        return x
+
+
+class DecoderSubLayer(object):
+    def __init__(self,
+                 d_model,
+                 d_ff,
+                 h,
+                 p_dropout):
+        self.layers = [
+            [MultiHeadAttention(d_model, h),
+             Dropout(p_dropout),
+             LayerNormalization()],
+            [MultiHeadAttention(d_model, h),
+             Dropout(p_dropout),
+             LayerNormalization()],
+            [FFN(d_model, d_ff),
+             Dropout(p_dropout),
+             LayerNormalization()]
+        ]
+
+    def __call__(self, x, memory,
+                 mask_src=None, mask_tgt=None, **kwargs):
+        return self.forward(x, memory, mask_src, mask_tgt, **kwargs)
+
+    def forward(self, x, memory,
+                mask_src=None, mask_tgt=None, **kwargs):
+        # 1st sub_layer
+        layers = self.layers[0]
+        h = layers[0](query=x, key=x, value=x, mask=mask_tgt, **kwargs)
+        h = layers[1](h, **kwargs)
+        x = layers[2](h + x, **kwargs)
+
+        # 2nd sub-layer
+        layers = self.layers[1]
+        h = layers[0](query=x, key=memory, value=memory,
+                      mask=mask_src, **kwargs)
+        h = layers[1](h, **kwargs)
+        x = layers[2](h + x, **kwargs)
+
+        # 3rd sub-layer
+        layers = self.layers[2]
+        h = layers[0](x, **kwargs)
+        h = layers[1](h, **kwargs)
+        x = layers[2](h + x, **kwargs)
+
+        return x
+
+
+class Generator(object):
+    def __init__(self,
+                 len_target_vocab):
+        self.layers = [
+            Dense(len_target_vocab),
+            Activation('softmax')
+        ]
+
+    def __call__(self, x, **kwargs):
+        return self.forward(x, **kwargs)
+
+    def forward(self, x, **kwargs):
+        for l in self.layers:
+            x = l(x, **kwargs)
+        return x
+
+
 class MultiHeadAttention(object):
     '''
-    Multi-Head Attention
+    Multi-Head Attention / Masked Multi-Head Attention
     '''
     def __init__(self, d_model, h):
         self.d_model = d_model
@@ -362,7 +360,7 @@ class FFN(object):
     '''
     Position-wise Feed-Forward Networks
     '''
-    def __init__(self, d_ff, d_model):
+    def __init__(self, d_model, d_ff):
         self.layers = [
             Dense(d_ff, d_model),
             Activation('relu'),
