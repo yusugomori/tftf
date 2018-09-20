@@ -44,7 +44,7 @@ if __name__ == '__main__':
     '''
     Train model
     '''
-    epochs = 30
+    epochs = 10
     batch_size = 100
 
     init = tf.global_variables_initializer()
@@ -85,63 +85,3 @@ if __name__ == '__main__':
         print('epoch: {}, '
               'loss: {:.3}, '
               'val_loss: {:.3}'.format(epoch+1, loss, val_loss))
-
-    '''
-    Generate sentences
-    '''
-    maxlen = 100
-    y = tf.placeholder(tf.int32, [None, None])
-    step = tf.constant(0)
-    flg = tf.cast(tf.zeros_like(y[:, 0]), dtype=tf.bool)
-
-    mask_src = transformer._pad_mask(x)
-    memory = transformer.encode(x, mask=mask_src)
-
-    def cond(y, step, f):
-        n_flg = tf.reduce_sum(tf.cast(f, tf.int32))
-        next = \
-            tf.not_equal(n_flg,
-                         tf.reduce_sum(tf.ones_like(flg,
-                                                    dtype=tf.int32)))
-        return tf.logical_and(step+1 < maxlen, next)
-
-    def body(y, step, f):
-        mask_tgt = transformer._pad_subsequent_mask(y)
-        h = transformer.decode(y, memory,
-                               mask_src=mask_src, mask_tgt=mask_tgt,
-                               recurrent=True)
-        output = transformer.generate(h[:, -1], recurrent=False)
-        output = tf.cast(tf.argmax(output, axis=1), tf.int32)
-        y = tf.concat([y, output[:, np.newaxis]], axis=1)
-        f = tf.logical_or(f, tf.equal(output, end_char))
-
-        return [y, step+1, f]
-
-    generator = tf.while_loop(cond,
-                              body,
-                              loop_vars=[y, step, flg],
-                              shape_invariants=[
-                                tf.TensorShape([None, None]),
-                                step.get_shape(),
-                                tf.TensorShape([None])])
-
-    test_X_ = pad_sequences(test_X, value=pad_value)
-    y_ = start_char * np.ones_like(test_X, dtype='int32')[:, np.newaxis]
-    preds, _, _ = sess.run(generator, feed_dict={
-        x: test_X_,
-        y: y_
-    })
-
-    for n in range(len(test_X)):
-        data = test_X[n][1:-1]
-        target = test_y[n][1:-1]
-        pred = list(preds[n])[1:]
-        pred.append(end_char)
-
-        print('-' * 20)
-        print('Original sentence:',
-              ' '.join([i2w_X[i] for i in data]))
-        print('True sentence:',
-              ' '.join([i2w_y[i] for i in target]))
-        print('Generated sentence:',
-              ' '.join([i2w_y[i] for i in pred[:pred.index(end_char)]]))
