@@ -13,6 +13,7 @@ class Dropout(Layer):
         pass
 
     def forward(self, x, **kwargs):
-        training = kwargs['training'] if 'training' in kwargs else False
+        training = kwargs['training'] \
+            if 'training' in kwargs else tf.constant(False, dtype=tf.bool)
         p = tf.cond(training, lambda: self.p, lambda: 1.)
         return tf.nn.dropout(x, p)

@@ -7,7 +7,7 @@ class BatchNormalization(Layer):
     def __init__(self,
                  gamma_initializer='ones',
                  beta_initializer='zeros',
-                 eps=np.float32(1e-5)):
+                 eps=np.float32(1e-6)):
         super().__init__()
         self.gamma_initializer = gamma_initializer
         self.beta_initializer = beta_initializer
@@ -26,9 +26,7 @@ class BatchNormalization(Layer):
         self.params = [self.gamma, self.beta]
 
     def forward(self, x, **kwargs):
-        axes = 0
-        if len(x.get_shape()) == 4:
-            axes = (0, 1, 2)
+        axes = list(range(len(x.get_shape()) - 1))
         mean, var = tf.nn.moments(x, axes, keep_dims=True)
         std = tf.sqrt(var + self.eps)
         return self.gamma * (x - mean) / std + self.beta

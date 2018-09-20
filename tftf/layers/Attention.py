@@ -87,7 +87,7 @@ class Attention(Layer):
                               x,
                               tf.einsum('ijk,kl->ijl', self.state, self.W_a))
             if self._use_mask:
-                score *= self.mask[:, np.newaxis, :]
+                score *= self.mask[:, np.newaxis]
 
             attn = self.attn = tf.nn.softmax(score)
             c = tf.einsum('ijk,ikl->ijl', attn, self.state)
